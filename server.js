@@ -24,19 +24,53 @@ async function main() {
       const { refresh_token } = await getRefreshToken();
       storeRefreshTokenToDb(refresh_token);
     }, 1000 * 60 * 60 * 4);
-
-    const result = await client
-      .db("sonos")
-      .collection("refresh_tokens")
-      .findOne({ user: "pnodseth@gmail.com" });
-    console.log("TCL: main -> result", result);
   } catch (err) {
     console.log(err);
-  } finally {
+  } /* finally {
     await client.close();
-  }
+  } */
 
-  app.use("/", (req, res) => {
+  /* GET SONOS HOUSEHOLDS */
+  app.get("/households", async (req, res) => {
+    const endpoint = "households";
+    try {
+      const response = await baseSonosApiRequest(endpoint, "get");
+      const data = await response.json();
+      console.log("TCL: main -> data", data);
+      res.json(data);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  /* GET HOUSEHOLD GROUPS */
+  app.get("/households/:id/groups", async (req, res) => {
+    const endpoint = `households/${req.params.id}/groups`;
+    try {
+      const response = await baseSonosApiRequest(endpoint, "get");
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  app.get("/groups/:id/playback/:command", async (req, res) => {
+    const endpoint = `groups/${req.params.id}/playback/${req.params.command}`;
+    console.log("TCL: main -> endpoint", endpoint);
+    try {
+      const response = await baseSonosApiRequest(endpoint, "POST");
+      const data = await response.json();
+      console.log("TCL: main -> data", data);
+      res.json(data);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  app.use("/", async (req, res) => {
+    const { refresh_token } = await getRefreshToken();
+    console.log("TCL: main -> refresh_token", refresh_token);
     res.send("sonos server");
   });
 
@@ -46,14 +80,15 @@ async function main() {
 }
 
 async function storeRefreshTokenToDb(token) {
-  await client
-    .db("sonos")
-    .collection("refresh_tokens")
-    .updateOne({ user: "pnodseth@gmail.com" }, { $set: { token } });
+  const collection = await getCollection("refresh_tokens");
+  const result = await collection.updateOne(
+    { user: "pnodseth@gmail.com" },
+    { $set: { token } }
+  );
 }
 
-function getCollection(name) {
-  return client.db("sonos").collection("refresh_tokens");
+async function getCollection(name) {
+  return client.db("sonos").collection(name);
 }
 
 async function baseTokenRequest(postData = {}) {
@@ -70,14 +105,35 @@ async function baseTokenRequest(postData = {}) {
   });
 }
 
+async function baseSonosApiRequest(endpoint, method, body) {
+  let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
+  console.log("TCL: baseSonosApiRequest -> url", url);
+  const { access_token } = await getRefreshToken();
+  console.log("TCL: baseSonosApiRequest -> access_token", access_token);
+  const headers = {
+    "Content-type": "application/json",
+    Authorization: `Bearer ${access_token}`,
+    Host: "api.ws.sonos.com"
+  };
+
+  return fetch(url, {
+    headers,
+    method,
+    body
+  });
+}
+
 async function getRefreshToken() {
-  const postData = `grant_type=refresh_token&refresh_token=${refresh_token}`;
+  //const collection = await getCollection("refresh_tokens");
+  const result = await client
+    .db("sonos")
+    .collection("refresh_tokens")
+    .findOne({ user: "pnodseth@gmail.com" });
+  const postData = `grant_type=refresh_token&refresh_token=${result.refresh_token}`;
   const response = await baseTokenRequest(postData);
   const data = await response.json();
   if (response.ok) {
-    access_token = data.access_token;
-    refresh_token = data.refresh_token;
-    console.log("TCL: getRefreshToken -> data", data);
+    storeRefreshTokenToDb(data.refresh_token);
   } else {
     console.log("did not succeed to get refresh token: ", data);
   }
