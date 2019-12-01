@@ -54,11 +54,46 @@ async function main() {
     }
   });
 
+  /* START PLAYING ON GROUP */
   app.get("/groups/:id/playback/:command", async (req, res) => {
     const endpoint = `groups/${req.params.id}/playback/${req.params.command}`;
     try {
       const response = await baseSonosApiRequest(endpoint, "POST");
       const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  /* Get playlists  */
+  app.get("/households/:id/playlists", async (req, res) => {
+    const endpoint = `households/${req.params.id}/playlists`;
+    try {
+      const response = await baseSonosApiRequest(endpoint, "get");
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  /* Load playlost */
+  //stue: RINCON_B8E93720D3D601400:3835498777
+  app.get("/groups/:id/loadplaylist", async (req, res) => {
+    const endpoint = `groups/${req.params.id}/playlists`;
+    const body = {
+      playlistId: "0",
+      playOnCompletion: true
+    };
+    try {
+      const response = await baseSonosApiRequest(
+        endpoint,
+        "POST",
+        JSON.stringify(body)
+      );
+      const data = await response.json();
+      console.log("TCL: main -> data", data);
       res.json(data);
     } catch (err) {
       console.log(err);
@@ -102,6 +137,7 @@ async function baseTokenRequest(postData = {}) {
 }
 
 async function baseSonosApiRequest(endpoint, method, body) {
+  console.log("TCL: baseSonosApiRequest -> body", body);
   let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
   const { access_token } = await getRefreshToken();
   const headers = {
