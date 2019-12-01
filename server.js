@@ -36,7 +36,6 @@ async function main() {
     try {
       const response = await baseSonosApiRequest(endpoint, "get");
       const data = await response.json();
-      console.log("TCL: main -> data", data);
       res.json(data);
     } catch (err) {
       console.log(err);
