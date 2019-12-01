@@ -57,11 +57,9 @@ async function main() {
 
   app.get("/groups/:id/playback/:command", async (req, res) => {
     const endpoint = `groups/${req.params.id}/playback/${req.params.command}`;
-    console.log("TCL: main -> endpoint", endpoint);
     try {
       const response = await baseSonosApiRequest(endpoint, "POST");
       const data = await response.json();
-      console.log("TCL: main -> data", data);
       res.json(data);
     } catch (err) {
       console.log(err);
@@ -70,7 +68,6 @@ async function main() {
 
   app.use("/", async (req, res) => {
     const { refresh_token } = await getRefreshToken();
-    console.log("TCL: main -> refresh_token", refresh_token);
     res.send("sonos server");
   });
 
@@ -81,7 +78,7 @@ async function main() {
 
 async function storeRefreshTokenToDb(token) {
   const collection = await getCollection("refresh_tokens");
-  const result = await collection.updateOne(
+  await collection.updateOne(
     { user: "pnodseth@gmail.com" },
     { $set: { token } }
   );
@@ -107,9 +104,7 @@ async function baseTokenRequest(postData = {}) {
 
 async function baseSonosApiRequest(endpoint, method, body) {
   let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
-  console.log("TCL: baseSonosApiRequest -> url", url);
   const { access_token } = await getRefreshToken();
-  console.log("TCL: baseSonosApiRequest -> access_token", access_token);
   const headers = {
     "Content-type": "application/json",
     Authorization: `Bearer ${access_token}`,
@@ -124,11 +119,8 @@ async function baseSonosApiRequest(endpoint, method, body) {
 }
 
 async function getRefreshToken() {
-  //const collection = await getCollection("refresh_tokens");
-  const result = await client
-    .db("sonos")
-    .collection("refresh_tokens")
-    .findOne({ user: "pnodseth@gmail.com" });
+  const collection = await getCollection("refresh_tokens");
+  const result = await collection.findOne({ user: "pnodseth@gmail.com" });
   const postData = `grant_type=refresh_token&refresh_token=${result.refresh_token}`;
   const response = await baseTokenRequest(postData);
   const data = await response.json();
