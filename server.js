@@ -5,8 +5,6 @@ const url =
   "mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos";
 const fetch = require("node-fetch");
 const PORT = "3000";
-let access_token = "";
-let refresh_token = "1a8aa9d9-bd05-4c40-838b-5560a897578f";
 
 const client = new MongoClient(url, {
   useNewUrlParser: true,
@@ -19,6 +17,8 @@ async function main() {
   try {
     await client.connect();
 
+    const { refresh_token } = await getRefreshToken();
+    storeRefreshTokenToDb(refresh_token);
     // Get new refresh token every 4 hours
     setInterval(async () => {
       const { refresh_token } = await getRefreshToken();
@@ -26,9 +26,53 @@ async function main() {
     }, 1000 * 60 * 60 * 4);
   } catch (err) {
     console.log(err);
-  } /* finally {
-    await client.close();
-  } */
+  }
+
+  /* Start playback when user holds RFID chip near reader */
+  app.get("/rfid/:room/:rfid", async (req, res) => {
+    const { room, rfid } = req.params;
+    console.log(`Got a request with room: ${room} and rfid: ${rfid}`);
+    let roomDoc = await client
+      .db("sonos")
+      .collection("rooms")
+      .findOne({ rfid_room_name: room });
+
+    let playlistDoc = await client
+      .db("sonos")
+      .collection("playlists")
+      .findOne({ rfid: parseInt(rfid) });
+    if (roomDoc) {
+      console.log("found room: ", roomDoc);
+    }
+    if (playlistDoc) {
+      console.log("found playlist: ", playlistDoc);
+    }
+
+    if (roomDoc && playlistDoc) {
+      startPlayback(roomDoc.sonos_group_id, playlistDoc.sonos_playlist_id);
+    }
+
+    res.send("hello from server!");
+  });
+
+  app.get("/rfid/:room/playback/:command", async (req, res) => {
+    const { room, command } = req.params;
+    console.log(`Got a request with room: ${room} and command: ${command}`);
+    let roomDoc = await client
+      .db("sonos")
+      .collection("rooms")
+      .findOne({ rfid_room_name: room });
+
+    if (roomDoc) {
+      console.log("found room: ", roomDoc);
+    }
+
+    if (roomDoc) {
+      togglePlayPause(roomDoc.sonos_group_id, command);
+    }
+
+    res.send("hello from server!");
+  });
 
   /* GET SONOS HOUSEHOLDS */
   app.get("/households", async (req, res) => {
@@ -53,6 +97,41 @@ async function main() {
       console.log(err);
     }
   });
+
+  async function startPlayback(room, playlist) {
+    const endpoint = `groups/${room}/playlists`;
+    const body = {
+      playlistId: playlist.toString(),
+      playOnCompletion: true
+    };
+    try {
+      const response = await baseSonosApiRequest(
+        endpoint,
+        "POST",
+        JSON.stringify(body)
+      );
+      const data = await response.json();
+      console.log("TCL: main -> data", data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function togglePlayPause(room, command) {
+    const endpoint = `groups/${room}/playback/${command}`;
+    const body = {};
+    try {
+      const response = await baseSonosApiRequest(
+        endpoint,
+        "POST",
+        JSON.stringify(body)
+      );
+      const data = await response.json();
+      console.log("TCL: main -> data", data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   /* START PLAYING ON GROUP */
   app.get("/groups/:id/playback/:command", async (req, res) => {
