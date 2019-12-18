@@ -7,6 +7,14 @@ router.get("/", (req, res) => {
   res.send("sonos routes");
 });
 
+/* Start Sonos Authentication to get code required for access token */
+router.get("/startauth", (req, res) => {
+  const clientId = "3a06da21-689f-4286-af9b-530474926f27";
+  const redirect_url = "http%3A%2F%2Flocalhost%3A3000%2Fauthcomplete";
+  const url = `https://api.sonos.com/login/v3/oauth?client_id=${clientId}&response_type=code&state=state_test&scope=playback-control-all&redirect_uri=${redirect_url}`;
+  res.redirect(url);
+});
+
 /* GET SONOS HOUSEHOLDS */
 router.get("/households", async (req, res) => {
   const endpoint = "households";

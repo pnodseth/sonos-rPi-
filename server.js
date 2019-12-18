@@ -1,11 +1,19 @@
-var app = require("express")();
+const express = require("express");
+var app = express();
 var http = require("http").createServer(app);
 const rfidRoutes = require("./routes/rfid");
 const sonosRoutes = require("./routes/sonos");
 const client = require("./db");
 const PORT = "3000";
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const { isAuthorized, cookieSecret } = require("./middleware");
+
 const { storeRefreshTokenToDb, getRefreshToken } = require("./api/sonos");
 
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: false }));
 main().catch(console.err);
 
 async function main() {
@@ -30,8 +38,36 @@ async function main() {
 
   app.use("/rfid", rfidRoutes);
   app.use("/sonos", sonosRoutes);
-  app.use("/", async (req, res) => {
-    res.send("sonos server");
+
+  app.get("/sonosauth", isAuthorized, (req, res) => {
+    res.send("you did it");
+  });
+
+  app.post("/login", (req, res) => {
+    if (req.body.email && req.body.password) {
+    }
+    // setting cookies
+    res.cookie(
+      "user",
+      { user: req.body.email, cookieSecret },
+      {
+        maxAge: 900000,
+        httpOnly: true
+      }
+    );
+    return res.send("Cookie has been set");
+  });
+
+  app.get("/login", (req, res) => {
+    if (!req.cookies.user) {
+      res.sendFile(path.join(__dirname + "/views/login.html"));
+    } else {
+      res.redirect("/");
+    }
+  });
+
+  app.use("/", (req, res) => {
+    res.sendFile(path.join(__dirname + "/views/index.html"));
   });
 
   http.listen(PORT, () => {
