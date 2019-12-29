@@ -7,7 +7,6 @@ const PORT = "3000";
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const { isAuthorized, cookieSecret } = require("./middleware");
 const { startPlayback, togglePlayPause } = require("./api/sonos");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -77,29 +76,6 @@ async function main() {
   }, 1000 * 60 * 60 * 4);
 
   app.use("/sonos", sonosRoutes);
-
-  app.post("/login", (req, res) => {
-    if (req.body.email && req.body.password) {
-    }
-    // setting cookies
-    res.cookie(
-      "user",
-      { user: req.body.email, cookieSecret },
-      {
-        maxAge: 900000,
-        httpOnly: true
-      }
-    );
-    return res.send("Cookie has been set");
-  });
-
-  app.get("/login", (req, res) => {
-    if (!req.cookies.user) {
-      res.sendFile(path.join(__dirname + "/views/login.html"));
-    } else {
-      res.redirect("/");
-    }
-  });
 
   app.use("/", (req, res) => {
     res.sendFile(path.join(__dirname + "/views/index.html"));
