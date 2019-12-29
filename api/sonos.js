@@ -1,81 +1,105 @@
 const client = require("../db");
 const fetch = require("node-fetch");
 
-async function togglePlayPause(room, command) {
+async function togglePlayPause(room, command, user) {
   const endpoint = `groups/${room}/playback/${command}`;
   const body = {};
   try {
-    const response = await baseSonosApiRequest(
+    const response = await baseSonosApiRequest({
       endpoint,
-      "POST",
-      JSON.stringify(body)
-    );
+      method: "POST",
+      body: JSON.stringify(body),
+      user
+    });
     const data = await response.json();
-    console.log("TCL: main -> data", data);
   } catch (err) {
     console.log(err);
   }
 }
 
-async function startPlayback(room, playlist) {
+async function startPlayback(room, playlist, user) {
   const endpoint = `groups/${room}/playlists`;
   const body = {
     playlistId: playlist.toString(),
     playOnCompletion: true
   };
   try {
-    const response = await baseSonosApiRequest(
+    const response = await baseSonosApiRequest({
       endpoint,
-      "POST",
-      JSON.stringify(body)
-    );
-    const data = await response.json();
-    console.log("TCL: main -> data", data);
+      method: "POST",
+      body: JSON.stringify(body),
+      user
+    });
+    return response
   } catch (err) {
-    console.log(err);
+    console.log("error", err);
   }
 }
 
-async function baseSonosApiRequest(endpoint, method, body) {
-  console.log("TCL: baseSonosApiRequest -> body", body);
-  let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
-  const { access_token } = await getRefreshToken();
-  const headers = {
-    "Content-type": "application/json",
-    Authorization: `Bearer ${access_token}`,
-    Host: "api.ws.sonos.com"
-  };
+async function baseSonosApiRequest({ endpoint, method, body, user }) {
+  try {
+    let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
+    const { accessToken } = await getSonosAccessRefreshTokens({
+      type: "refreshToken",
+      user
+    });
+    console.log("TCL: baseSonosApiRequest -> access_token", accessToken);
+    const headers = {
+      "Content-type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      Host: "api.ws.sonos.com"
+    };
 
-  return fetch(url, {
-    headers,
-    method,
-    body
-  });
+    return fetch(url, {
+      headers,
+      method,
+      body
+    });
+  } catch (err) {
+    throw new Error(err);
+  }
 }
 
-async function getRefreshToken() {
+ async function getRefreshTokensForAllUsers() {
   const collection = await getCollection("refresh_tokens");
-  const result = await collection.findOne({ user: "pnodseth@gmail.com" });
-  const postData = `grant_type=refresh_token&refresh_token=${result.refresh_token}`;
-  const response = await baseTokenRequest(postData);
-  const data = await response.json();
-  if (response.ok) {
-    storeRefreshTokenToDb(data.refresh_token);
+  const allDocuments = await collection.find();
+  allDocuments.forEach(async (item) => {
+    const {refreshToken} = await getSonosAccessRefreshTokens({type: "refreshToken", user: item.user})
+    storeRefreshTokenToDb({
+      refreshToken: refreshToken,
+      user: item.user
+    });
+  })
+} 
+
+async function getSonosAccessRefreshTokens({ type, code, user }) {
+  console.log("TCL: getSonosAccessRefreshTokens -> user", user);
+  if (type !== "refreshToken" && type !== "accessToken") {
+    throw new Error(
+      "You need to provide a type of either 'accessToken' or 'refreshToken'"
+    );
   } else {
-    console.log("did not succeed to get refresh token: ", data);
+    const redirect_uri = "http://localhost:3000/sonos/authcomplete";
+    const collection = await getCollection("refresh_tokens");
+    const result = await collection.findOne({ user });
+    const postData =
+      type === "refreshToken"
+        ? `grant_type=refresh_token&refresh_token=${result.refreshToken}`
+        : `grant_type=authorization_code&code=${code}&redirect_uri=${redirect_uri}`;
+
+    const response = await baseTokenRequest(postData);
+    const data = await response.json();
+
+    if (response.ok) {
+      storeRefreshTokenToDb({ refreshToken: data.refresh_token, user: user });
+    } else {
+      throw new Error("Did not succeed to get refresh token");
+    }
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token
+    };
   }
-  return { access_token: data.access_token, refresh_token: data.refresh_token };
-}
-
-async function getAccessToken(code) {
-  const redirect_uri = "http://localhost:8080";
-  const postData = `grant_type=authorization_code&code=${code}&redirect_uri=${redirect_uri}`;
-  const response = baseTokenRequest(postData);
-
-  const data = await response.json();
-
-  const { access_token, refresh_token } = data;
-  return { access_token, refresh_token };
 }
 
 async function baseTokenRequest(postData = {}) {
@@ -99,18 +123,15 @@ async function getCollection(name) {
     .collection(name);
 }
 
-async function storeRefreshTokenToDb(token) {
+async function storeRefreshTokenToDb({ refreshToken, user }) {
   const collection = await getCollection("refresh_tokens");
-  await collection.updateOne(
-    { user: "pnodseth@gmail.com" },
-    { $set: { token } }
-  );
+  await collection.updateOne({ user }, { $set: { refreshToken } });
 }
 
 module.exports = {
   startPlayback,
   storeRefreshTokenToDb,
-  getRefreshToken,
+  getSonosAccessRefreshTokens,
   togglePlayPause,
   baseSonosApiRequest
 };

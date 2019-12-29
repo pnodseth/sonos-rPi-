@@ -7,15 +7,16 @@ router.get("/", (req, res) => {
   res.send("rfid routes");
 });
 
+
 /* Start playback when user holds RFID chip near reader */
-router.get("/:room/:rfid", async (req, res) => {
-  const { room, rfid } = req.params;
+router.get("/:sonosUser/:room/:rfid", async (req, res) => {
+  const { room, rfid, sonosUser } = req.params;
   console.log(`Got a request with room: ${room} and rfid: ${rfid}`);
   let roomDoc = await client
     .get()
     .db("sonos")
     .collection("rooms")
-    .findOne({ rfid_room_name: room });
+    .findOne({ rfid_room_name: room, sonos_user: sonosUser });
 
   let playlistDoc = await client
     .get()
@@ -34,14 +35,20 @@ router.get("/:room/:rfid", async (req, res) => {
       roomDoc.sonos_group_id,
       playlistDoc.sonos_playlist_id
     );
+
+    console.log("response: ", response);
     const data = await response.json();
+    res.json(JSON.stringify(data));
+  } else {
+    res.status(404);
+    if (!roomDoc) res.send("could not find room with name: ", room)
+    if (!playlistDoc) res.send("could not find playlist assosiated with RFID chip")
   }
 
-  res.json(JSON.stringify(data));
 });
 
-router.get("/:room/playback/:command", async (req, res) => {
-  const { room, command } = req.params;
+router.get("/:sonosUser/:room/playback/:command", async (req, res) => {
+  const { room, command, sonosUser } = req.params;
   console.log(`Got a request with room: ${room} and command: ${command}`);
   let roomDoc = await client
     .get()
