@@ -30,7 +30,7 @@ async function startPlayback(room, playlist, user) {
       body: JSON.stringify(body),
       user
     });
-    return response
+    return response;
   } catch (err) {
     console.log("error", err);
   }
@@ -60,24 +60,22 @@ async function baseSonosApiRequest({ endpoint, method, body, user }) {
   }
 }
 
- async function getRefreshTokensForAllUsers() {
+async function getRefreshTokensForAllUsers() {
   const collection = await getCollection("refresh_tokens");
   const allDocuments = await collection.find();
-  allDocuments.forEach(async (item) => {
-    const {refreshToken} = await getSonosAccessRefreshTokens({type: "refreshToken", user: item.user})
+  allDocuments.forEach(async item => {
+    const { refreshToken } = await getSonosAccessRefreshTokens({ type: "refreshToken", user: item.user });
     storeRefreshTokenToDb({
       refreshToken: refreshToken,
       user: item.user
     });
-  })
-} 
+  });
+}
 
 async function getSonosAccessRefreshTokens({ type, code, user }) {
   console.log("TCL: getSonosAccessRefreshTokens -> user", user);
   if (type !== "refreshToken" && type !== "accessToken") {
-    throw new Error(
-      "You need to provide a type of either 'accessToken' or 'refreshToken'"
-    );
+    throw new Error("You need to provide a type of either 'accessToken' or 'refreshToken'");
   } else {
     const redirect_uri = "http://localhost:3000/sonos/authcomplete";
     const collection = await getCollection("refresh_tokens");
@@ -125,7 +123,7 @@ async function getCollection(name) {
 
 async function storeRefreshTokenToDb({ refreshToken, user }) {
   const collection = await getCollection("refresh_tokens");
-  await collection.updateOne({ user }, { $set: { refreshToken } });
+  await collection.updateOne({ user }, { $set: { refreshToken } }, { upsert: true });
 }
 
 module.exports = {
@@ -133,5 +131,6 @@ module.exports = {
   storeRefreshTokenToDb,
   getSonosAccessRefreshTokens,
   togglePlayPause,
-  baseSonosApiRequest
+  baseSonosApiRequest,
+  baseTokenRequest
 };

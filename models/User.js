@@ -11,11 +11,19 @@ var UserSchema = new Schema({
   password: {
     type: String,
     required: true
+  },
+  devicesCode: {
+    type: String
   }
 });
 
 UserSchema.pre("save", function(next) {
   var user = this;
+
+  if (this.isNew) {
+    user.devicesCode =
+      "A RANDOM GENERATED STRING HERE, TO SEND FROM THE ARDUINOS WHEN THEY ARE BEING SET UP (INSTEAD OF SONOS USERNAME)";
+  }
   if (this.isModified("password") || this.isNew) {
     bcrypt.genSalt(10, function(err, salt) {
       if (err) {

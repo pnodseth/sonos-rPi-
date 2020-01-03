@@ -12,6 +12,7 @@ module.exports = function(passport) {
   opts.secretOrKey = config.secret;
   passport.use(
     new JwtStrategy(opts, function(jwt_payload, done) {
+      console.log("payload id: ", jwt_payload);
       User.findOne({ _id: jwt_payload._id }, function(err, user) {
         console.log("TCL: user", user);
         console.log("TCL: err", err);
