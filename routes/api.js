@@ -31,7 +31,6 @@ router.post("/signup", function (req, res) {
 });
 
 router.post("/signin", function (req, res) {
-  console.log(req.body.username);
   User.findOne(
     {
       username: req.body.username
@@ -49,14 +48,16 @@ router.post("/signin", function (req, res) {
             const jwtContent = { username: user.username, _id: user._id };
             var token = jwt.sign(JSON.stringify(jwtContent), config.secret);
             // return the information including token as JSON
-            res.json({ success: true, token: "JWT " + token });
+            console.log("user object: ", user.userSecret)
+            res.json({ success: true, token: "JWT " + token, user: { username: user.username, devices: user.devices, userSecret: user.userSecret, test: "hei" } });
           } else {
             res.status(401).send({ success: false, msg: "Authentication failed. Wrong password." });
           }
         });
       }
     }
-  );
+  ).select("+password")
+    .populate('devices', '-_id -__v -userSecret -user');
 });
 
 router.post("/book", passport.authenticate("jwt", { session: false }), function (req, res) {

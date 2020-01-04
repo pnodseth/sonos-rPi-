@@ -12,7 +12,7 @@ var UserSchema = new mongoose.Schema({
     required: true,
     select: false
   },
-  deviceUserSecret: {
+  userSecret: {
     type: String
   },
   devices: {
@@ -24,7 +24,7 @@ UserSchema.pre("save", function (next) {
   var user = this;
 
   if (this.isNew) {
-    user.deviceUserSecret =
+    user.userSecret =
       "A RANDOM GENERATED STRING HERE, TO SEND FROM THE ARDUINOS WHEN THEY ARE BEING SET UP (INSTEAD OF SONOS USERNAME)";
   }
   if (this.isModified("password") || this.isNew) {
