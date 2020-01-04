@@ -102,8 +102,7 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
   }
 });
 
-router.get("/households", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  console.log("RUNNING");
+router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function(req, res) {
   var token = getToken(req.headers);
   if (token) {
     const endpoint = "households";
@@ -118,6 +117,26 @@ router.get("/households", passport.authenticate("jwt", { session: false }), asyn
     } catch (err) {
       console.log(err);
       res.send(err);
+    }
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
+router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    const endpoint = `households/${req.query.household}/groups`;
+    try {
+      const response = await baseSonosApiRequest({
+        endpoint,
+        method: "get",
+        user: req.user._id
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (err) {
+      console.log(err);
     }
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
