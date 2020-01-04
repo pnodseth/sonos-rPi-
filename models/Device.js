@@ -8,7 +8,7 @@ var DeviceSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
   },
-  name: {
+  deviceName: {
     type: String,
     required: true
   }

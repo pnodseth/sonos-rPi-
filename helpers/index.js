@@ -53,9 +53,9 @@ async function handlePlayback(message) {
   res.send("hello from server!");
 }
 
+/* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
 async function handleSetDevice(message) {
-  const { userSecret, name } = JSON.parse(message);
-  console.log(`set device with secret ${userSecret} and name: ${name}`);
+  const { userSecret, deviceName } = JSON.parse(message);
   User.findOne({ userSecret }, (err, user) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
@@ -65,17 +65,41 @@ async function handleSetDevice(message) {
       //TODO: Send mqtt response back to blink LEDS or something
     } else {
       // save new device
-      console.log("found user: ", user)
-      const device = new Device({
-        userSecret,
-        name,
-        user: user._id
-      });
-      device.save(err => {
+      let device = Device.findOne({ userSecret, deviceName }, (err, device) => {
         if (err) {
-          console.log("couldn't save device with name: ", name);
+          console.log("error finding device: ", err)
+        } else {
+
+          if (!device) {
+            device = new Device({
+              userSecret,
+              deviceName,
+              user: user._id
+            });
+
+            device.save(err => {
+              if (err) {
+                console.log("couldn't save device", err);
+              }
+            });
+          }
+
+          if (!user.devices.includes(device._id)) {
+            user.devices.push(device._id)
+            user.save(function (err) {
+              if (err) {
+                console.log("TCL: err", err);
+              }
+              console.log("saved user with new device")
+            });
+          }
+
         }
-      });
+
+
+
+      })
+
     }
   });
 }

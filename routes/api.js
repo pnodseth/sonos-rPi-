@@ -1,16 +1,17 @@
-var mongoose = require("mongoose");
-var passport = require("passport");
-var config = require("../config/database");
+const mongoose = require("mongoose");
+const passport = require("passport");
+const config = require("../config/database");
 require("../config/passport")(passport);
-var express = require("express");
-var jwt = require("jsonwebtoken");
-var router = express.Router();
-var User = mongoose.model("User");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const router = express.Router();
+const User = mongoose.model("User");
+const Device = mongoose.model("Device");
 const { baseTokenRequest, storeRefreshTokenToDb, baseSonosApiRequest } = require("../api/sonos");
 
 /* USER HANDLING */
 
-router.post("/signup", function(req, res) {
+router.post("/signup", function (req, res) {
   if (!req.body.username || !req.body.password) {
     res.json({ success: false, msg: "Please pass username and password." });
   } else {
@@ -19,7 +20,7 @@ router.post("/signup", function(req, res) {
       password: req.body.password
     });
     // save the user
-    newUser.save(function(err) {
+    newUser.save(function (err) {
       if (err) {
         console.log("TCL: err", err);
         return res.json({ success: false, msg: "Username already exists." });
@@ -29,20 +30,20 @@ router.post("/signup", function(req, res) {
   }
 });
 
-router.post("/signin", function(req, res) {
+router.post("/signin", function (req, res) {
   console.log(req.body.username);
   User.findOne(
     {
       username: req.body.username
     },
-    function(err, user) {
+    function (err, user) {
       if (err) throw err;
 
       if (!user) {
         res.status(401).send({ success: false, msg: "Authentication failed. User not found." });
       } else {
         // check if password matches
-        user.comparePassword(req.body.password, function(err, isMatch) {
+        user.comparePassword(req.body.password, function (err, isMatch) {
           if (isMatch && !err) {
             // if user is found and password is right create a token
             const jwtContent = { username: user.username, _id: user._id };
@@ -58,7 +59,7 @@ router.post("/signin", function(req, res) {
   );
 });
 
-router.post("/book", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.post("/book", passport.authenticate("jwt", { session: false }), function (req, res) {
   var token = getToken(req.headers);
   if (token) {
     console.log(req.body);
@@ -69,11 +70,20 @@ router.post("/book", passport.authenticate("jwt", { session: false }), function(
   }
 });
 
-router.get("/book", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/device", passport.authenticate("jwt", { session: false }), function (req, res) {
   var token = getToken(req.headers);
   if (token) {
     console.log("user:", req.user);
-    res.send(req.user);
+    const devices = Device.find({ user: req.user._id })
+      .populate('user')
+      .exec((err, devices) => {
+        if (err) {
+          console.log("error finding devices: ", err)
+          res.send(err)
+        } else {
+          res.send(devices)
+        }
+      })
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
@@ -83,7 +93,7 @@ router.get("/book", passport.authenticate("jwt", { session: false }), function(r
 
 /* Users have to authenticate with sonos in the client app. When they do that successfully, the client calls this endpoint with
 a "code" to retrieve and store access tokens */
-router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token = getToken(req.headers);
   if (token) {
     console.log("user:", req.user);
@@ -102,7 +112,7 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
   }
 });
 
-router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token = getToken(req.headers);
   if (token) {
     const endpoint = "households";
@@ -123,7 +133,7 @@ router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), a
   }
 });
 
-router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token = getToken(req.headers);
   if (token) {
     const endpoint = `households/${req.query.household}/groups`;
