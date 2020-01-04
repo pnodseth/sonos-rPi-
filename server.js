@@ -12,6 +12,7 @@ mongoose
   .then(() => console.log("mongoose connection succesful"))
   .catch(err => console.error(err));
 require("./models/User");
+require("./models/Device");
 const client = require("./db");
 const PORT = "3003";
 const bodyParser = require("body-parser");
@@ -23,7 +24,7 @@ const cors = require("cors");
 
 /* MQTT STUFF */
 const mqtt = require("mqtt");
-const { handleLoadPlaylist, handlePlayback } = require("./helpers");
+const { handleLoadPlaylist, handlePlayback, handleSetDevice } = require("./helpers");
 let mqttClient;
 const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://localhost:1883";
 const { storeRefreshTokenToDb, getSonosAccessRefreshTokens } = require("./api/sonos");
@@ -67,11 +68,14 @@ async function main() {
   mqttClient.on("message", function(topic, message) {
     // message is Buffer
     switch (topic) {
-      case "rfid/loadPlaylist":
+      case "device/rfid/loadPlaylist":
         handleLoadPlaylist(message.toString());
         break;
-      case "rfid/playback":
+      case "device/rfid/playback":
         handlePlayback(message.toString());
+        break;
+      case "device/setdevice":
+        handleSetDevice(message.toString());
         break;
       default:
         break;

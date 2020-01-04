@@ -1,8 +1,7 @@
 var mongoose = require("mongoose");
-var Schema = mongoose.Schema;
 var bcrypt = require("bcrypt-nodejs");
 
-var UserSchema = new Schema({
+var UserSchema = new mongoose.Schema({
   username: {
     type: String,
     unique: true,
@@ -12,7 +11,7 @@ var UserSchema = new Schema({
     type: String,
     required: true
   },
-  devicesCode: {
+  deviceUserSecret: {
     type: String
   }
 });
@@ -21,7 +20,7 @@ UserSchema.pre("save", function(next) {
   var user = this;
 
   if (this.isNew) {
-    user.devicesCode =
+    user.deviceUserSecret =
       "A RANDOM GENERATED STRING HERE, TO SEND FROM THE ARDUINOS WHEN THEY ARE BEING SET UP (INSTEAD OF SONOS USERNAME)";
   }
   if (this.isModified("password") || this.isNew) {

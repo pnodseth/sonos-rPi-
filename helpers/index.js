@@ -1,3 +1,7 @@
+var mongoose = require("mongoose");
+const User = mongoose.model("User");
+const Device = mongoose.model("Device");
+
 async function handleLoadPlaylist(message) {
   const data = JSON.parse(message);
   const { room, rfid, sonosUser } = data;
@@ -49,7 +53,34 @@ async function handlePlayback(message) {
   res.send("hello from server!");
 }
 
+async function handleSetDevice(message) {
+  const { userSecret, name } = JSON.parse(message);
+  console.log(`set device with secret ${secret} and name: ${name}`);
+  User.findOne({ userUsecret }, (err, user) => {
+    if (err) {
+      console.log("error finding user with user secret: ", err);
+    }
+    if (!user) {
+      console.log("couldn't find user with user secret: ", userSecret);
+      //TODO: Send mqtt response back to blink LEDS or something
+    } else {
+      // save new device
+      const device = new Device({
+        userSecret,
+        name,
+        user: user._id
+      });
+      device.save(err => {
+        if (err) {
+          console.log("couldn't save device with name: ", name);
+        }
+      });
+    }
+  });
+}
+
 module.exports = {
   handleLoadPlaylist,
-  handlePlayback
+  handlePlayback,
+  handleSetDevice
 };
