@@ -47,7 +47,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 main().catch(console.err);
 
 async function main() {
-  await client.connect("mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos", function(err) {
+  await client.connect("mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos", function (err) {
     if (err) {
       console.log("Unable to connect to Mongo: ", err);
       process.exit(1);
@@ -55,17 +55,20 @@ async function main() {
   });
 
   mqttClient = mqtt.connect(mqttUrl);
-  mqttClient.on("connect", function() {
+  mqttClient.on("connect", function () {
     console.log("mqtt connected");
-    mqttClient.subscribe("rfid/loadPlaylist", function(err) {
+    mqttClient.subscribe("rfid/loadPlaylist", function (err) {
       /* ERROR HANDLING */
     });
-    mqttClient.subscribe("rfid/playback", function(err) {
+    mqttClient.subscribe("rfid/playback", function (err) {
+      /* ERROR HANDLING */
+    });
+    mqttClient.subscribe("device/setdevice", function (err) {
       /* ERROR HANDLING */
     });
   });
 
-  mqttClient.on("message", function(topic, message) {
+  mqttClient.on("message", function (topic, message) {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":

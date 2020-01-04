@@ -55,8 +55,8 @@ async function handlePlayback(message) {
 
 async function handleSetDevice(message) {
   const { userSecret, name } = JSON.parse(message);
-  console.log(`set device with secret ${secret} and name: ${name}`);
-  User.findOne({ userUsecret }, (err, user) => {
+  console.log(`set device with secret ${userSecret} and name: ${name}`);
+  User.findOne({ userSecret }, (err, user) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
     }
@@ -65,6 +65,7 @@ async function handleSetDevice(message) {
       //TODO: Send mqtt response back to blink LEDS or something
     } else {
       // save new device
+      console.log("found user: ", user)
       const device = new Device({
         userSecret,
         name,
