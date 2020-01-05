@@ -43,7 +43,6 @@ async function baseSonosApiRequest({ endpoint, method, body, user }) {
       type: "refreshToken",
       user
     });
-    console.log("TCL: baseSonosApiRequest -> access_token", accessToken);
     const headers = {
       "Content-type": "application/json",
       Authorization: `Bearer ${accessToken}`,

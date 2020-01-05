@@ -6,6 +6,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const User = mongoose.model("User");
+const RfidChip = mongoose.model("RfidChip")
 const Device = mongoose.model("Device");
 const { baseTokenRequest, storeRefreshTokenToDb, baseSonosApiRequest } = require("../api/sonos");
 
@@ -58,7 +59,7 @@ router.post("/signin", function (req, res) {
     }
   ).select("+password")
     .populate('devices', ' -__v -userSecret -user')
-    .populate('rfidChips', ' -__v -_id -userSecret -user');
+    .populate('rfidChips', ' -__v -userSecret -user');
 });
 
 router.post("/book", passport.authenticate("jwt", { session: false }), function (req, res) {
@@ -110,14 +111,43 @@ router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { ses
             }
             User.findById(req.user._id)
               .populate('devices', ' -__v -userSecret -user')
+              .populate('rfidChips', ' -__v -userSecret -user')
               .exec((err, user) => {
-                res.json({ success: true, msg: "Successful associated device with sonos group", user: { username: user.username, devices: user.devices, userSecret: user.userSecret } });
+                res.json({ success: true, msg: "Successful associated device with sonos group", user: { username: user.username, devices: user.devices, rfidChips: user.rfidChips, userSecret: user.userSecret } });
               })
           })
         }
       })
 
 
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
+/* Associate RFID Chip with sonos playlist */
+router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jwt", { session: false }), function (req, res) {
+  var token = getToken(req.headers);
+  console.log("rfid: ", req.params.rfidId)
+  if (token) {
+
+    RfidChip.findById(req.params.rfidId)
+      .exec(async (err, chip) => {
+        if (err) {
+          console.error(err)
+          res.send(err)
+        } else {
+          chip.sonosPlaylistId = req.params.sonosPlaylistId;
+          chip = await chip.save();
+          console.log("saved chip! ", chip)
+          User.findById(req.user._id)
+            .populate('devices', ' -__v -userSecret -user')
+            .populate('rfidChips', ' -__v -userSecret -user')
+            .exec((err, user) => {
+              res.json({ user: { username: user.username, devices: user.devices, rfidChips: user.rfidChips, userSecret: user.userSecret } });
+            })
+        }
+      })
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
