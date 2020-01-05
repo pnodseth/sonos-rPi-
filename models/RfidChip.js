@@ -6,14 +6,16 @@ var RfidChipSchema = new mongoose.Schema({
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+        ref: "User",
+        required: true
     },
     id: {
         type: String,
         required: true
     },
     sonosPlaylistId: {
-        type: String
+        type: String,
+        default: ""
     }
 });
 

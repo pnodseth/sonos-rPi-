@@ -57,7 +57,8 @@ router.post("/signin", function (req, res) {
       }
     }
   ).select("+password")
-    .populate('devices', ' -__v -userSecret -user');
+    .populate('devices', ' -__v -userSecret -user')
+    .populate('rfidChips', ' -__v -_id -userSecret -user');
 });
 
 router.post("/book", passport.authenticate("jwt", { session: false }), function (req, res) {

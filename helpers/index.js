@@ -4,14 +4,14 @@ const Device = mongoose.model("Device");
 
 async function handleLoadPlaylist(message) {
   const data = JSON.parse(message);
-  const { room, rfid, sonosUser } = data;
+  const { room, rfid, userSecret } = data;
   console.log(`Got a request with room: ${room} and rfid: ${rfid}`);
 
   let roomDoc = await client
     .get()
     .db("sonos")
     .collection("rooms")
-    .findOne({ rfid_room_name: room, sonos_user: sonosUser });
+    .findOne({ rfid_room_name: room, sonos_user: userSecret });
 
   let playlistDoc = await client
     .get()
@@ -26,7 +26,7 @@ async function handleLoadPlaylist(message) {
   }
 
   if (roomDoc && playlistDoc) {
-    const response = await startPlayback(roomDoc.sonos_group_id, playlistDoc.sonos_playlist_id, sonosUser);
+    const response = await startPlayback(roomDoc.sonos_group_id, playlistDoc.sonos_playlist_id, userSecret);
   } else {
     if (!roomDoc) mqttClient.publish("rfid/roomNotFound", "failed");
     if (!playlistDoc) mqttClient.publish("rfid/playlistNotFound", "no playlist assosiated with RFID chip");
@@ -34,7 +34,7 @@ async function handleLoadPlaylist(message) {
 }
 
 async function handlePlayback(message) {
-  const { room, command, sonosUser } = JSON.parse(message);
+  const { room, command, userSecret } = JSON.parse(message);
   console.log(`Got a request with room: ${room} and command: ${command}`);
   let roomDoc = await client
     .get()
@@ -47,7 +47,7 @@ async function handlePlayback(message) {
   }
 
   if (roomDoc) {
-    togglePlayPause(roomDoc.sonos_group_id, command, sonosUser);
+    togglePlayPause(roomDoc.sonos_group_id, command, userSecret);
   }
 
   res.send("hello from server!");

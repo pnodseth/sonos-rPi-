@@ -11,9 +11,9 @@ mongoose
   })
   .then(() => console.log("mongoose connection succesful"))
   .catch(err => console.error(err));
-require("./models/User");
+const User = require("./models/User");
 require("./models/Device");
-require("./models/RfidChip");
+const RfidChip = require("./models/RfidChip");
 const client = require("./db");
 const PORT = "3003";
 const bodyParser = require("body-parser");
@@ -58,10 +58,10 @@ async function main() {
   mqttClient = mqtt.connect(mqttUrl);
   mqttClient.on("connect", function () {
     console.log("mqtt connected");
-    mqttClient.subscribe("rfid/loadPlaylist", function (err) {
+    mqttClient.subscribe("device/rfid/loadPlaylist", function (err) {
       /* ERROR HANDLING */
     });
-    mqttClient.subscribe("rfid/playback", function (err) {
+    mqttClient.subscribe("device/rfid/playback", function (err) {
       /* ERROR HANDLING */
     });
     mqttClient.subscribe("device/setdevice", function (err) {
@@ -73,7 +73,40 @@ async function main() {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":
-        handleLoadPlaylist(message.toString());
+
+        /* Check if user is currently registering RFID chip. If not, load playlist */
+        const { userSecret, rfid } = JSON.parse(message);
+        User.findOne({ userSecret }, async (err, user) => {
+          if (err) {
+            console.log("error finding user with user secret: ", err);
+          }
+          if (!user) {
+            console.log("couldn't find user with user secret: ", userSecret);
+            //TODO: Send mqtt response back to blink LEDS or something
+          } else {
+            if (!user.rfidIsRegistering) {
+              handleLoadPlaylist(message.toString());
+
+            } else {
+              var newRFIDChip = new RfidChip({
+                userSecret,
+                user: user._id,
+                id: rfid,
+                sonosPlaylistId: ""
+              });
+              // save the user
+              newRFIDChip = await newRFIDChip.save()
+              user.rfidChips.push(newRFIDChip._id)
+              user = await user.save()
+              newRFIDChip.save(function (err) {
+                console.log("NEW RFID CHIP REGISTERED WITH ID: ", rfid)
+
+              });
+            }
+
+
+          }
+        });
         break;
       case "device/rfid/playback":
         handlePlayback(message.toString());
