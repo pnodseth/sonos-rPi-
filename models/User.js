@@ -17,6 +17,13 @@ var UserSchema = new mongoose.Schema({
   },
   devices: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
+  },
+  rfidChips: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'RfidChip' }]
+  },
+  rfidIsRegistering: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -25,7 +32,7 @@ UserSchema.pre("save", function (next) {
 
   if (this.isNew) {
     user.userSecret =
-      "A RANDOM GENERATED STRING HERE, TO SEND FROM THE ARDUINOS WHEN THEY ARE BEING SET UP (INSTEAD OF SONOS USERNAME)";
+      "SALD-1E12-FASKV912";
   }
   if (this.isModified("password") || this.isNew) {
     bcrypt.genSalt(10, function (err, salt) {

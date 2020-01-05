@@ -74,7 +74,8 @@ async function handleSetDevice(message) {
             device = new Device({
               userSecret,
               deviceName,
-              user: user._id
+              user: user._id,
+              sonosGroupId: ""
             });
 
             device.save(err => {

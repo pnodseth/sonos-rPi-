@@ -49,7 +49,7 @@ router.post("/signin", function (req, res) {
             var token = jwt.sign(JSON.stringify(jwtContent), config.secret);
             // return the information including token as JSON
             console.log("user object: ", user.userSecret)
-            res.json({ success: true, token: "JWT " + token, user: { username: user.username, devices: user.devices, userSecret: user.userSecret, test: "hei" } });
+            res.json({ success: true, token: "JWT " + token, user: { username: user.username, devices: user.devices, rfidChips: user.rfidChips, rfidIsRegistering: user.rfidIsRegistering, userSecret: user.userSecret } });
           } else {
             res.status(401).send({ success: false, msg: "Authentication failed. Wrong password." });
           }
@@ -57,7 +57,7 @@ router.post("/signin", function (req, res) {
       }
     }
   ).select("+password")
-    .populate('devices', '-_id -__v -userSecret -user');
+    .populate('devices', ' -__v -userSecret -user');
 });
 
 router.post("/book", passport.authenticate("jwt", { session: false }), function (req, res) {
@@ -85,6 +85,38 @@ router.get("/device", passport.authenticate("jwt", { session: false }), function
           res.send(devices)
         }
       })
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
+/* Associate device with sonos group */
+router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { session: false }), function (req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+
+    const device = Device.findById(req.params.deviceId)
+      .exec((err, device) => {
+        if (err) {
+          console.log("error finding device: ", err)
+          res.send(err)
+        } else {
+          device.sonosGroupId = req.params.sonosGroupId;
+          device.save(function (err) {
+            if (err) {
+              console.log("TCL: err", err);
+              return res.send(err)
+            }
+            User.findById(req.user._id)
+              .populate('devices', ' -__v -userSecret -user')
+              .exec((err, user) => {
+                res.json({ success: true, msg: "Successful associated device with sonos group", user: { username: user.username, devices: user.devices, userSecret: user.userSecret } });
+              })
+          })
+        }
+      })
+
+
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
@@ -149,6 +181,51 @@ router.get("/getgroups", passport.authenticate("jwt", { session: false }), async
     } catch (err) {
       console.log(err);
     }
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
+router.get("/getplaylists", passport.authenticate("jwt", { session: false }), async function (req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    const endpoint = `households/${req.query.household}/playlists`;
+    try {
+      const response = await baseSonosApiRequest({
+        endpoint,
+        method: "get",
+        user: req.user._id
+      });
+      const data = await response.json();
+      res.send(data);
+    } catch (err) {
+      console.log(err);
+      res.send(err)
+    }
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
+/* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
+where it reverts back to false after 30 sec in case no further action is performed from user. */
+router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function (req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    console.log("user object: ", req.user)
+    req.user.rfidIsRegistering = true
+    req.user.save(function (err) {
+      if (err) {
+        console.log("TCL: err", err);
+        res.json({ success: false, err: err });
+      }
+      setTimeout(() => {
+        console.log("reverting registration to previous state")
+        req.user.rfidIsRegistering = false
+        req.user.save()
+      }, 30 * 1000)
+      res.json({ success: true, user: req.user });
+    });
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }

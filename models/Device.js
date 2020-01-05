@@ -11,6 +11,9 @@ var DeviceSchema = new mongoose.Schema({
   deviceName: {
     type: String,
     required: true
+  },
+  sonosGroupId: {
+    type: String
   }
 });
 

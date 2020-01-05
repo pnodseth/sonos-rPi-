@@ -13,6 +13,7 @@ mongoose
   .catch(err => console.error(err));
 require("./models/User");
 require("./models/Device");
+require("./models/RfidChip");
 const client = require("./db");
 const PORT = "3003";
 const bodyParser = require("body-parser");
