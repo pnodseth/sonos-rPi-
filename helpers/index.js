@@ -1,13 +1,14 @@
 var mongoose = require("mongoose");
 const User = mongoose.model("User");
 const Device = mongoose.model("Device");
+const { startPlayback } = require("../api/sonos")
 
 async function handleLoadPlaylist(message) {
   const data = JSON.parse(message);
   const { room, rfid, userSecret } = data;
-  console.log(`Got a request with room: ${room} and rfid: ${rfid}`);
+  console.log(`Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
 
-  let roomDoc = await client
+  /* let roomDoc = await client
     .get()
     .db("sonos")
     .collection("rooms")
@@ -23,14 +24,39 @@ async function handleLoadPlaylist(message) {
   }
   if (playlistDoc) {
     console.log("found playlist: ", playlistDoc);
-  }
+  } */
+  User.findOne({ userSecret })
+    .populate('rfidChips', ' -__v -userSecret -user')
+    .populate('devices')
+    .exec(async (err, user) => {
+      if (err) {
+        console.log(err)
+      } else {
+        if (user) {
+          console.log(user)
+          let chip = user.rfidChips.find(el => el.id === rfid)
+          let device = user.devices.find(el => el.deviceName === room)
+          if (chip && device) {
+            const response = await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user._id);
+            console.log("response: ", response)
+          } else if (!chip) {
+            console.log("no chip found with id : ", rfid)
+          } else if (!device) {
+            console.log("no device found with name: ", room)
+          }
+        } else {
+          console.log("no user found with user secret: ", userSecret)
+        }
+      }
+    })
 
-  if (roomDoc && playlistDoc) {
+
+  /* if (roomDoc && playlistDoc) {
     const response = await startPlayback(roomDoc.sonos_group_id, playlistDoc.sonos_playlist_id, userSecret);
   } else {
     if (!roomDoc) mqttClient.publish("rfid/roomNotFound", "failed");
     if (!playlistDoc) mqttClient.publish("rfid/playlistNotFound", "no playlist assosiated with RFID chip");
-  }
+  } */
 }
 
 async function handlePlayback(message) {
