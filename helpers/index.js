@@ -2,29 +2,13 @@ var mongoose = require("mongoose");
 const User = mongoose.model("User");
 const Device = mongoose.model("Device");
 const { startPlayback } = require("../api/sonos")
+const globalRFIDRegister = { test: "hei" }
+
 
 async function handleLoadPlaylist(message) {
   const data = JSON.parse(message);
   const { room, rfid, userSecret } = data;
   console.log(`Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
-
-  /* let roomDoc = await client
-    .get()
-    .db("sonos")
-    .collection("rooms")
-    .findOne({ rfid_room_name: room, sonos_user: userSecret });
-
-  let playlistDoc = await client
-    .get()
-    .db("sonos")
-    .collection("playlists")
-    .findOne({ rfid: parseInt(rfid) });
-  if (roomDoc) {
-    console.log("found room: ", roomDoc);
-  }
-  if (playlistDoc) {
-    console.log("found playlist: ", playlistDoc);
-  } */
   User.findOne({ userSecret })
     .populate('rfidChips', ' -__v -userSecret -user')
     .populate('devices')
@@ -134,5 +118,6 @@ async function handleSetDevice(message) {
 module.exports = {
   handleLoadPlaylist,
   handlePlayback,
-  handleSetDevice
+  handleSetDevice,
+  globalRFIDRegister
 };

@@ -9,6 +9,7 @@ const User = mongoose.model("User");
 const RfidChip = mongoose.model("RfidChip")
 const Device = mongoose.model("Device");
 const { baseTokenRequest, storeRefreshTokenToDb, baseSonosApiRequest } = require("../api/sonos");
+const { globalRFIDRegister } = require("../helpers");
 
 /* USER HANDLING */
 
@@ -250,12 +251,26 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
         console.log("TCL: err", err);
         res.json({ success: false, err: err });
       }
+
       setTimeout(() => {
         console.log("reverting registration to previous state")
-        req.user.rfidIsRegistering = false
-        req.user.save()
-      }, 30 * 1000)
-      res.json({ success: true, user: req.user });
+        if (typeof globalRFIDRegister[req.user.userSecret] === "function") {
+          req.user.rfidIsRegistering = false
+          req.user.save()
+          globalRFIDRegister[req.user.userSecret] = null
+          res.json({ success: false, user: req.user, registerTimeout: true });
+        }
+      }, 15 * 1000)
+
+      /* Create a callback function which is triggered when user triggers RFID Chip */
+      globalRFIDRegister[req.user.userSecret] = async (savedUser) => {
+        console.log("this shit works!")
+        savedUser.rfidIsRegistering = false;
+        await savedUser.save();
+        res.json({ success: true, user: savedUser, registerTimeout: false });
+      }
+
+      console.log("globalRFIDReg: ", globalRFIDRegister)
     });
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });

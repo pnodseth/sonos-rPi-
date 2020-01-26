@@ -25,7 +25,7 @@ const cors = require("cors");
 
 /* MQTT STUFF */
 const mqtt = require("mqtt");
-const { handleLoadPlaylist, handlePlayback, handleSetDevice } = require("./helpers");
+const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
 let mqttClient;
 const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://localhost:1883";
 const { storeRefreshTokenToDb, getSonosAccessRefreshTokens } = require("./api/sonos");
@@ -33,7 +33,7 @@ const { startPlayback, togglePlayPause } = require("./api/sonos");
 
 app.use(
   cors({
-    origin: "http://localhost:8080",
+    origin: ["http://localhost:8080", "http://localhost:8081"],
     optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
     credentials: true
   })
@@ -73,7 +73,7 @@ async function main() {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":
-
+        console.log("hei!")
         /* Check if user is currently registering RFID chip. If not, load playlist */
         const { userSecret, rfid } = JSON.parse(message);
         User.findOne({ userSecret }, async (err, user) => {
@@ -97,11 +97,15 @@ async function main() {
               // save the user
               newRFIDChip = await newRFIDChip.save()
               user.rfidChips.push(newRFIDChip._id)
-              user = await user.save()
-              newRFIDChip.save(function (err) {
+              //user = await user.save()
+              /* newRFIDChip.save(function (err) {
                 console.log("NEW RFID CHIP REGISTERED WITH ID: ", rfid)
 
-              });
+              }); */
+
+              /* Send response with callback from api request */
+              globalRFIDRegister[user.userSecret](user)
+              globalRFIDRegister[user.userSecret] = null;
             }
 
 
