@@ -11,7 +11,7 @@ async function togglePlayPause(room, command, user) {
       body: JSON.stringify(body),
       user
     });
-    const data = await response.json();
+    return response;
   } catch (err) {
     console.log(err);
   }

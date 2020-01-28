@@ -27,7 +27,7 @@ const cors = require("cors");
 const mqtt = require("mqtt");
 const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
 let mqttClient;
-const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://localhost:1883";
+const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
 const { storeRefreshTokenToDb, getSonosAccessRefreshTokens } = require("./api/sonos");
 const { startPlayback, togglePlayPause } = require("./api/sonos");
 
@@ -55,7 +55,7 @@ async function main() {
     }
   });
 
-  mqttClient = mqtt.connect(mqttUrl);
+  mqttClient = mqtt.connect(mqttUrl, { username: "rnscwaio", password: "DXi1Og5mJEej" });
   mqttClient.on("connect", function () {
     console.log("mqtt connected");
     mqttClient.subscribe("device/rfid/loadPlaylist", function (err) {

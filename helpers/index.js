@@ -1,7 +1,7 @@
 var mongoose = require("mongoose");
 const User = mongoose.model("User");
 const Device = mongoose.model("Device");
-const { startPlayback } = require("../api/sonos")
+const { startPlayback, togglePlayPause } = require("../api/sonos")
 const globalRFIDRegister = { test: "hei" }
 
 
@@ -35,33 +35,36 @@ async function handleLoadPlaylist(message) {
     })
 
 
-  /* if (roomDoc && playlistDoc) {
-    const response = await startPlayback(roomDoc.sonos_group_id, playlistDoc.sonos_playlist_id, userSecret);
-  } else {
-    if (!roomDoc) mqttClient.publish("rfid/roomNotFound", "failed");
-    if (!playlistDoc) mqttClient.publish("rfid/playlistNotFound", "no playlist assosiated with RFID chip");
-  } */
 }
 
 async function handlePlayback(message) {
-  const { room, command, userSecret } = JSON.parse(message);
-  console.log(`Got a request with room: ${room} and command: ${command}`);
-  let roomDoc = await client
-    .get()
-    .db("sonos")
-    .collection("rooms")
-    .findOne({ rfid_room_name: room });
-
-  if (roomDoc) {
-    console.log("found room: ", roomDoc);
-  }
-
-  if (roomDoc) {
-    togglePlayPause(roomDoc.sonos_group_id, command, userSecret);
-  }
-
-  res.send("hello from server!");
+  const data = JSON.parse(message);
+  const { room, command, userSecret } = data;
+  console.log(`Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
+  User.findOne({ userSecret })
+    .populate('devices')
+    .exec(async (err, user) => {
+      if (err) {
+        console.log(err)
+      } else {
+        if (user) {
+          let device = user.devices.find(el => el.deviceName === room)
+          if (device) {
+            const response = await togglePlayPause(device.sonosGroupId, command, user._id);
+            console.log("response: ", response)
+            const data = await response.json();
+            console.log("result: ", data)
+          } else if (!device) {
+            console.log("no device found with name: ", room)
+          }
+        } else {
+          console.log("no user found with user secret: ", userSecret)
+        }
+      }
+    })
 }
+
+
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
 async function handleSetDevice(message) {
