@@ -5,11 +5,12 @@ export interface IUser extends Document {
   password: string;
   userSecret: string;
   accessToken: string;
-  accessTokenExpirationTimestamp: string;
+  accessTokenExpirationTimestamp: number;
   refreshToken: string;
   devices: IDevice[];
   rfidChips: IRfidChip[];
   rfidIsRegistering: boolean;
+  comparePassword: Function;
 }
 
 export interface IDevice extends Document {

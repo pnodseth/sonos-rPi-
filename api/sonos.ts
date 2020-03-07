@@ -2,7 +2,7 @@ const client = require("../db");
 const fetch = require("node-fetch");
 const { getAccessTokenFromDBorRefreshToken } = require("./auth_sonos");
 
-async function togglePlayPause(room: string, command: string, user) {
+export async function togglePlayPause(room: string, command: string, user) {
   const endpoint = `groups/${room}/playback/${command}`;
   const body = {};
   try {
@@ -18,14 +18,14 @@ async function togglePlayPause(room: string, command: string, user) {
   }
 }
 
-async function startPlayback(room: string, playlist: string, user) {
-  const endpoint = `groups/${room}/playlists`;
+export async function startPlayback(room: string, playlist: string, user) {
+  const endpoint: string = `groups/${room}/playlists`;
   const body = {
     playlistId: playlist.toString(),
     playOnCompletion: true
   };
   try {
-    const response = await baseSonosApiRequest({
+    const response: Response = await baseSonosApiRequest({
       endpoint,
       method: "POST",
       body: JSON.stringify(body),
@@ -37,10 +37,10 @@ async function startPlayback(room: string, playlist: string, user) {
   }
 }
 
-async function baseSonosApiRequest({ endpoint, method, body, user }) {
+export async function baseSonosApiRequest({ endpoint, method, body, user }) {
   try {
     let url: string = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
-    const { accessToken } = await getAccessTokenFromDBorRefreshToken(user);
+    const { accessToken }: { accessToken: string } = await getAccessTokenFromDBorRefreshToken(user);
 
     const headers = {
       "Content-type": "application/json",

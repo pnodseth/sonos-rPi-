@@ -2,8 +2,7 @@ const mqtt = require("mqtt");
 const RfidChip = require("./models/RfidChip");
 const User = require("./models/User");
 const Device = require("./models/Device");
-
-const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
+import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
 
 function mqttHan() {
   const mqttUrl: string = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";

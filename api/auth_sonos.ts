@@ -1,8 +1,9 @@
 /* https://developer.sonos.com/reference/authorization-api/create-token/ */
 /* When user authorizes with Sonos through client app, we need to obtain accessToken and store it on user in db */
-const fetch = require("node-fetch");
+import fetch from "node-fetch";
+import { IUser } from "../models/models.interface";
 
-async function createAccessTokenFromAuthCodeGrant(code, redirectUri, user) {
+async function createAccessTokenFromAuthCodeGrant(code: string, redirectUri: string, user: IUser) {
   const postData = `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`;
   console.log("postdata: ", postData);
   try {
@@ -30,7 +31,7 @@ async function createAccessTokenFromAuthCodeGrant(code, redirectUri, user) {
 
 /* Function that first checks expiry timestamp on access token stored in Db. If not expired, use access token from DB. If expired, use refresh token in db
  to get a new access token */
-async function getAccessTokenFromDBorRefreshToken(user) {
+async function getAccessTokenFromDBorRefreshToken(user: IUser) {
   let now = new Date().getTime();
   let { accessTokenExpirationTimestamp } = user;
 
@@ -39,7 +40,7 @@ async function getAccessTokenFromDBorRefreshToken(user) {
     console.log("getting new access token from refresh token...");
     /* User has a refresh token stored, get new access token */
     if (user.refreshToken !== "") {
-      const postData = `grant_type=refresh_token&refresh_token=${user.refreshToken}`;
+      const postData: string = `grant_type=refresh_token&refresh_token=${user.refreshToken}`;
 
       try {
         const response = await baseTokenRequest(postData);
@@ -75,7 +76,7 @@ async function getAccessTokenFromDBorRefreshToken(user) {
   }
 }
 
-async function baseTokenRequest(postData = {}) {
+async function baseTokenRequest(postData) {
   const url = "https://api.sonos.com/login/v3/oauth/access";
   const headers = {
     "Content-type": "application/x-www-form-urlencoded",
