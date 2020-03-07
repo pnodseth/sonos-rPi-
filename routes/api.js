@@ -13,6 +13,7 @@ const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
 const { globalRFIDRegister } = require("../helpers");
 
 /* USER HANDLING */
+/* ---------------------- */
 
 router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
@@ -80,6 +81,9 @@ router.post("/signin", function(req, res) {
     .populate("rfidChips", " -__v -userSecret -user");
 });
 
+/* ----- DEVICES ---------*/
+
+/* GET A USER'S SONOSBOX DEVICES */
 router.get("/device", passport.authenticate("jwt", { session: false }), function(req, res) {
   var token = getToken(req.headers);
   if (token) {
@@ -169,7 +173,45 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jw
   }
 });
 
+/* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
+where it reverts back to false after 30 sec in case no further action is performed from user. */
+router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function(req, res) {
+  var token = getToken(req.headers);
+  if (token) {
+    req.user.rfidIsRegistering = true;
+    req.user.save(function(err) {
+      if (err) {
+        console.log("TCL: err", err);
+        res.json({ success: false, err: err });
+      }
+
+      setTimeout(() => {
+        console.log("reverting registration to previous state");
+        if (typeof globalRFIDRegister[req.user.userSecret] === "function") {
+          req.user.rfidIsRegistering = false;
+          req.user.save();
+          globalRFIDRegister[req.user.userSecret] = null;
+          res.json({ success: false, user: req.user, registerTimeout: true });
+        }
+      }, 15 * 1000);
+
+      /* Create a callback function which is triggered when user triggers RFID Chip */
+      globalRFIDRegister[req.user.userSecret] = async savedUser => {
+        console.log("this shit works!");
+        savedUser.rfidIsRegistering = false;
+        await savedUser.save();
+        res.json({ success: true, user: savedUser, registerTimeout: false });
+      };
+
+      console.log("globalRFIDReg: ", globalRFIDRegister);
+    });
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
 /* SONOS RELATED */
+/* THINGS INVOLVING CALLING SONOS API */
 
 /* Users have to authenticate with sonos in the client app. When they do that successfully, the client calls this endpoint with
 a "code" to retrieve and store access tokens */
@@ -265,43 +307,6 @@ router.get("/getplaylists", passport.authenticate("jwt", { session: false }), as
       console.log(err);
       res.send(err);
     }
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
-/* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
-where it reverts back to false after 30 sec in case no further action is performed from user. */
-router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token = getToken(req.headers);
-  if (token) {
-    req.user.rfidIsRegistering = true;
-    req.user.save(function(err) {
-      if (err) {
-        console.log("TCL: err", err);
-        res.json({ success: false, err: err });
-      }
-
-      setTimeout(() => {
-        console.log("reverting registration to previous state");
-        if (typeof globalRFIDRegister[req.user.userSecret] === "function") {
-          req.user.rfidIsRegistering = false;
-          req.user.save();
-          globalRFIDRegister[req.user.userSecret] = null;
-          res.json({ success: false, user: req.user, registerTimeout: true });
-        }
-      }, 15 * 1000);
-
-      /* Create a callback function which is triggered when user triggers RFID Chip */
-      globalRFIDRegister[req.user.userSecret] = async savedUser => {
-        console.log("this shit works!");
-        savedUser.rfidIsRegistering = false;
-        await savedUser.save();
-        res.json({ success: true, user: savedUser, registerTimeout: false });
-      };
-
-      console.log("globalRFIDReg: ", globalRFIDRegister);
-    });
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
