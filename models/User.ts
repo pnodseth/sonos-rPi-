@@ -1,7 +1,10 @@
-var mongoose = require("mongoose");
 var bcrypt = require("bcrypt-nodejs");
 
-var UserSchema = new mongoose.Schema({
+import * as mongoose from "mongoose";
+import { IUser } from "./models.interface";
+import { Schema } from "mongoose";
+
+var UserSchema: Schema = new mongoose.Schema({
   username: {
     type: String,
     unique: true,
@@ -39,18 +42,18 @@ var UserSchema = new mongoose.Schema({
   }
 });
 
-UserSchema.pre("save", function(next) {
-  var user = this;
+UserSchema.pre("save", function(next: mongoose.HookNextFunction) {
+  var user: IUser = this;
 
   if (this.isNew) {
     user.userSecret = "SALD-1E12-FASKV912";
   }
   if (this.isModified("password") || this.isNew) {
-    bcrypt.genSalt(10, function(err, salt) {
+    bcrypt.genSalt(10, function(err, salt: string) {
       if (err) {
         return next(err);
       }
-      bcrypt.hash(user.password, salt, null, function(err, hash) {
+      bcrypt.hash(user.password, salt, null, function(err, hash: string) {
         if (err) {
           return next(err);
         }
@@ -63,7 +66,7 @@ UserSchema.pre("save", function(next) {
   }
 });
 
-UserSchema.methods.comparePassword = function(passw, cb) {
+UserSchema.methods.comparePassword = function(passw: string, cb: Function) {
   bcrypt.compare(passw, this.password, function(err, isMatch) {
     if (err) {
       return cb(err);
@@ -72,4 +75,4 @@ UserSchema.methods.comparePassword = function(passw, cb) {
   });
 };
 
-module.exports = mongoose.model("User", UserSchema);
+export default mongoose.model<IUser>("RfidChip", UserSchema);

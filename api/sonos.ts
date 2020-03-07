@@ -2,11 +2,11 @@ const client = require("../db");
 const fetch = require("node-fetch");
 const { getAccessTokenFromDBorRefreshToken } = require("./auth_sonos");
 
-async function togglePlayPause(room, command, user) {
+async function togglePlayPause(room: string, command: string, user) {
   const endpoint = `groups/${room}/playback/${command}`;
   const body = {};
   try {
-    const response = await baseSonosApiRequest({
+    const response: Response = await baseSonosApiRequest({
       endpoint,
       method: "POST",
       body: JSON.stringify(body),
@@ -18,7 +18,7 @@ async function togglePlayPause(room, command, user) {
   }
 }
 
-async function startPlayback(room, playlist, user) {
+async function startPlayback(room: string, playlist: string, user) {
   const endpoint = `groups/${room}/playlists`;
   const body = {
     playlistId: playlist.toString(),
@@ -39,7 +39,7 @@ async function startPlayback(room, playlist, user) {
 
 async function baseSonosApiRequest({ endpoint, method, body, user }) {
   try {
-    let url = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
+    let url: string = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
     const { accessToken } = await getAccessTokenFromDBorRefreshToken(user);
 
     const headers = {

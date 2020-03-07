@@ -5,8 +5,8 @@ const Device = require("./models/Device");
 
 const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
 
-function mqttHandler() {
-  const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
+function mqttHan() {
+  const mqttUrl: string = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
 
   let mqttClient = mqtt.connect(mqttUrl, {
     username: "rnscwaio",
@@ -29,18 +29,18 @@ function mqttHandler() {
     });
   });
 
-  mqttClient.on("message", function(topic, message) {
+  mqttClient.on("message", function(topic: string, message: string) {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":
         console.log("hei!");
 
         /* Check if user is currently registering RFID chip. If not, load playlist */
-        const { userSecret, rfid } = JSON.parse(message);
+        const { userSecret, rfid }: { userSecret: string; rfid: string } = JSON.parse(message);
         User.findOne({ userSecret })
           .populate("rfidChips", " -__v -userSecret -user")
           .populate("devices")
-          .exec(async (err, user) => {
+          .exec(async (err: Error, user) => {
             if (err) {
               console.log("error finding user with user secret: ", err);
             }
@@ -86,4 +86,4 @@ function mqttHandler() {
   });
 }
 
-module.exports = mqttHandler;
+module.exports = mqttHan;

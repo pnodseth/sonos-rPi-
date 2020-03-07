@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const cors = require("cors");
 
-const mqttHandler = require("./mqttHandler");
+const mqttHandler = require("./mqttHan");
 const config = require("./config/database");
 require("./models/User");
 require("./models/RfidChip");
@@ -38,8 +38,6 @@ app.use(
 app.use(passport.initialize());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-main().catch(console.err);
 
 async function main() {
   mqttHandler();

@@ -12,7 +12,7 @@ async function createAccessTokenFromAuthCodeGrant(code, redirectUri, user) {
       let data = await response.json();
       user.accessToken = data.access_token;
       user.refreshToken = data.refresh_token;
-      user.accessTokenExpirationTimestamp = data.expires_in;
+      user.accessTokenExpirationTimestamp = new Date().getTime() + data.expires_in;
 
       try {
         await user.save();
@@ -36,6 +36,7 @@ async function getAccessTokenFromDBorRefreshToken(user) {
 
   /* Access Token expired, get new with refresh token  */
   if (now > accessTokenExpirationTimestamp) {
+    console.log("getting new access token from refresh token...");
     /* User has a refresh token stored, get new access token */
     if (user.refreshToken !== "") {
       const postData = `grant_type=refresh_token&refresh_token=${user.refreshToken}`;
@@ -47,7 +48,7 @@ async function getAccessTokenFromDBorRefreshToken(user) {
           let data = await response.json();
           user.accessToken = data.access_token;
           user.refreshToken = data.refresh_token;
-          user.accessTokenExpirationTimestamp = data.expires_in;
+          user.accessTokenExpirationTimestamp = new Date().getTime() + data.expires_in;
 
           try {
             await user.save();
@@ -69,6 +70,7 @@ async function getAccessTokenFromDBorRefreshToken(user) {
 
     /* Access token still valid, use it. */
   } else {
+    console.log("getting access token stored in DB");
     return { accessToken: user.accessToken, refreshToken: user.refreshToken };
   }
 }
