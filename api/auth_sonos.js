@@ -2,16 +2,14 @@
 /* When user authorizes with Sonos through client app, we need to obtain accessToken and store it on user in db */
 const fetch = require("node-fetch");
 
-async function createAccessTokenFromAuthCodeGrant(code, user) {
-  const redirect_uri = "http://localhost:3000/sonos/authcomplete";
-  const postData = `grant_type=authorization_code&code=${code}&redirect_uri=${redirect_uri}`;
+async function createAccessTokenFromAuthCodeGrant(code, redirectUri, user) {
+  const postData = `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`;
   console.log("postdata: ", postData);
   try {
     const response = await baseTokenRequest(postData);
 
     if (response.ok) {
       let data = await response.json();
-      console.log(data);
       user.accessToken = data.access_token;
       user.refreshToken = data.refresh_token;
       user.accessTokenExpirationTimestamp = data.expires_in;

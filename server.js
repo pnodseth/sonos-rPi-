@@ -1,7 +1,6 @@
 const express = require("express");
 var app = express();
 var http = require("http").createServer(app);
-const sonosRoutes = require("./routes/sonos");
 const mongoose = require("mongoose");
 const config = require("./config/database");
 mongoose
@@ -25,17 +24,9 @@ const cors = require("cors");
 
 /* MQTT STUFF */
 const mqtt = require("mqtt");
-const {
-  handleLoadPlaylist,
-  handlePlayback,
-  handleSetDevice,
-  globalRFIDRegister
-} = require("./helpers");
+const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
 let mqttClient;
-const mqttUrl =
-  process.env.NODE_ENV === "production"
-    ? "mqtt://prod-url"
-    : "mqtt://hairdresser.cloudmqtt.com:18179";
+const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
 
 app.use(
   cors({
@@ -53,15 +44,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 main().catch(console.err);
 
 async function main() {
-  await client.connect(
-    "mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos",
-    function(err) {
-      if (err) {
-        console.log("Unable to connect to Mongo: ", err);
-        process.exit(1);
-      }
+  await client.connect("mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos", function(err) {
+    if (err) {
+      console.log("Unable to connect to Mongo: ", err);
+      process.exit(1);
     }
-  );
+  });
 
   mqttClient = mqtt.connect(mqttUrl, {
     username: "rnscwaio",
@@ -136,7 +124,6 @@ async function main() {
     }
   });
 
-  app.use("/sonos", sonosRoutes);
   app.use("/api", api);
   app.use("/", (req, res) => {
     res.send("welcome!");

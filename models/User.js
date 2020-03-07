@@ -13,7 +13,7 @@ var UserSchema = new mongoose.Schema({
     select: false
   },
   userSecret: {
-    type: String,
+    type: String
   },
   accessToken: {
     type: String
@@ -28,10 +28,10 @@ var UserSchema = new mongoose.Schema({
     default: ""
   },
   devices: {
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Device" }]
   },
   rfidChips: {
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'RfidChip' }]
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "RfidChip" }]
   },
   rfidIsRegistering: {
     type: Boolean,
@@ -39,19 +39,18 @@ var UserSchema = new mongoose.Schema({
   }
 });
 
-UserSchema.pre("save", function (next) {
+UserSchema.pre("save", function(next) {
   var user = this;
 
   if (this.isNew) {
-    user.userSecret =
-      "SALD-1E12-FASKV912";
+    user.userSecret = "SALD-1E12-FASKV912";
   }
   if (this.isModified("password") || this.isNew) {
-    bcrypt.genSalt(10, function (err, salt) {
+    bcrypt.genSalt(10, function(err, salt) {
       if (err) {
         return next(err);
       }
-      bcrypt.hash(user.password, salt, null, function (err, hash) {
+      bcrypt.hash(user.password, salt, null, function(err, hash) {
         if (err) {
           return next(err);
         }
@@ -64,8 +63,8 @@ UserSchema.pre("save", function (next) {
   }
 });
 
-UserSchema.methods.comparePassword = function (passw, cb) {
-  bcrypt.compare(passw, this.password, function (err, isMatch) {
+UserSchema.methods.comparePassword = function(passw, cb) {
+  bcrypt.compare(passw, this.password, function(err, isMatch) {
     if (err) {
       return cb(err);
     }

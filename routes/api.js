@@ -80,17 +80,6 @@ router.post("/signin", function(req, res) {
     .populate("rfidChips", " -__v -userSecret -user");
 });
 
-router.post("/book", passport.authenticate("jwt", { session: false }), function(req, res) {
-  var token = getToken(req.headers);
-  if (token) {
-    console.log(req.body);
-
-    res.json({ success: true, msg: "Successful created new book." });
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
 router.get("/device", passport.authenticate("jwt", { session: false }), function(req, res) {
   var token = getToken(req.headers);
   if (token) {
@@ -187,12 +176,12 @@ a "code" to retrieve and store access tokens */
 router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function(req, res) {
   var token = getToken(req.headers);
   if (token) {
-    const { code } = req.body;
+    const { code, redirectUri } = req.body;
 
     User.findById(req.user._id).exec(async (err, user) => {
       if (!err) {
         try {
-          let result = await createAccessTokenFromAuthCodeGrant(code, user);
+          let result = await createAccessTokenFromAuthCodeGrant(code, redirectUri, user);
           console.log("result: ", result);
           res.send({
             success: true,
@@ -215,13 +204,16 @@ router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), a
   if (token) {
     const endpoint = "households";
     try {
-      const response = await baseSonosApiRequest({
-        endpoint,
-        method: "get",
-        user: req.user._id
+      User.findById(req.user._id).exec(async (err, user) => {
+        const response = await baseSonosApiRequest({
+          endpoint,
+          method: "get",
+          user
+        });
+        const data = await response.json();
+
+        res.json(data);
       });
-      const data = await response.json();
-      res.json(data);
     } catch (err) {
       console.log(err);
       res.send(err);
@@ -236,13 +228,16 @@ router.get("/getgroups", passport.authenticate("jwt", { session: false }), async
   if (token) {
     const endpoint = `households/${req.query.household}/groups`;
     try {
-      const response = await baseSonosApiRequest({
-        endpoint,
-        method: "get",
-        user: req.user._id
+      User.findById(req.user._id).exec(async (err, user) => {
+        const response = await baseSonosApiRequest({
+          endpoint,
+          method: "get",
+          user
+        });
+        const data = await response.json();
+
+        res.json(data);
       });
-      const data = await response.json();
-      res.json(data);
     } catch (err) {
       console.log(err);
     }
@@ -256,13 +251,16 @@ router.get("/getplaylists", passport.authenticate("jwt", { session: false }), as
   if (token) {
     const endpoint = `households/${req.query.household}/playlists`;
     try {
-      const response = await baseSonosApiRequest({
-        endpoint,
-        method: "get",
-        user: req.user._id
+      User.findById(req.user._id).exec(async (err, user) => {
+        const response = await baseSonosApiRequest({
+          endpoint,
+          method: "get",
+          user
+        });
+        const data = await response.json();
+
+        res.json(data);
       });
-      const data = await response.json();
-      res.send(data);
     } catch (err) {
       console.log(err);
       res.send(err);
