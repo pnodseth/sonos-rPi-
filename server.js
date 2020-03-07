@@ -97,11 +97,6 @@ async function main() {
               // save the user
               newRFIDChip = await newRFIDChip.save()
               user.rfidChips.push(newRFIDChip._id)
-              //user = await user.save()
-              /* newRFIDChip.save(function (err) {
-                console.log("NEW RFID CHIP REGISTERED WITH ID: ", rfid)
-
-              }); */
 
               /* Send response with callback from api request */
               globalRFIDRegister[user.userSecret](user)
