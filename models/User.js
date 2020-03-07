@@ -13,7 +13,19 @@ var UserSchema = new mongoose.Schema({
     select: false
   },
   userSecret: {
+    type: String,
+  },
+  accessToken: {
     type: String
+  },
+  accessTokenExpirationTimestamp: {
+    type: Number,
+    default: 0
+  },
+
+  refreshToken: {
+    type: String,
+    default: ""
   },
   devices: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]

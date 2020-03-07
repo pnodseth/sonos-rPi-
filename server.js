@@ -25,11 +25,17 @@ const cors = require("cors");
 
 /* MQTT STUFF */
 const mqtt = require("mqtt");
-const { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } = require("./helpers");
+const {
+  handleLoadPlaylist,
+  handlePlayback,
+  handleSetDevice,
+  globalRFIDRegister
+} = require("./helpers");
 let mqttClient;
-const mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
-const { storeRefreshTokenToDb, getSonosAccessRefreshTokens } = require("./api/sonos");
-const { startPlayback, togglePlayPause } = require("./api/sonos");
+const mqttUrl =
+  process.env.NODE_ENV === "production"
+    ? "mqtt://prod-url"
+    : "mqtt://hairdresser.cloudmqtt.com:18179";
 
 app.use(
   cors({
@@ -41,96 +47,94 @@ app.use(
 
 /* PASSPORT STUFF */
 app.use(passport.initialize());
-
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 main().catch(console.err);
 
 async function main() {
-  await client.connect("mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos", function (err) {
-    if (err) {
-      console.log("Unable to connect to Mongo: ", err);
-      process.exit(1);
+  await client.connect(
+    "mongodb://sonosAdm:CsaBv-!tT.Z.kgs6FnW6@ds018839.mlab.com:18839/sonos",
+    function(err) {
+      if (err) {
+        console.log("Unable to connect to Mongo: ", err);
+        process.exit(1);
+      }
     }
-  });
+  );
 
-  mqttClient = mqtt.connect(mqttUrl, { username: "rnscwaio", password: "DXi1Og5mJEej" });
-  mqttClient.on("connect", function () {
+  mqttClient = mqtt.connect(mqttUrl, {
+    username: "rnscwaio",
+    password: "DXi1Og5mJEej"
+  });
+  mqttClient.on("connect", function() {
     console.log("mqtt connected");
-    mqttClient.subscribe("device/rfid/loadPlaylist", function (err) {
+    mqttClient.subscribe("device/rfid/loadPlaylist", function(err) {
       /* ERROR HANDLING */
     });
-    mqttClient.subscribe("device/rfid/playback", function (err) {
+    mqttClient.subscribe("device/rfid/playback", function(err) {
       /* ERROR HANDLING */
     });
-    mqttClient.subscribe("device/setdevice", function (err) {
+    mqttClient.subscribe("device/setdevice", function(err) {
       /* ERROR HANDLING */
     });
   });
 
-  mqttClient.on("message", function (topic, message) {
+  mqttClient.on("message", function(topic, message) {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":
-        console.log("hei!")
+        console.log("hei!");
+
         /* Check if user is currently registering RFID chip. If not, load playlist */
         const { userSecret, rfid } = JSON.parse(message);
-        User.findOne({ userSecret }, async (err, user) => {
-          if (err) {
-            console.log("error finding user with user secret: ", err);
-          }
-          if (!user) {
-            console.log("couldn't find user with user secret: ", userSecret);
-            //TODO: Send mqtt response back to blink LEDS or something
-          } else {
-            if (!user.rfidIsRegistering) {
-              handleLoadPlaylist(message.toString());
-
-            } else {
-              var newRFIDChip = new RfidChip({
-                userSecret,
-                user: user._id,
-                id: rfid,
-                sonosPlaylistId: ""
-              });
-              // save the user
-              newRFIDChip = await newRFIDChip.save()
-              user.rfidChips.push(newRFIDChip._id)
-
-              /* Send response with callback from api request */
-              globalRFIDRegister[user.userSecret](user)
-              globalRFIDRegister[user.userSecret] = null;
+        User.findOne({ userSecret })
+          .populate("rfidChips", " -__v -userSecret -user")
+          .populate("devices")
+          .exec(async (err, user) => {
+            if (err) {
+              console.log("error finding user with user secret: ", err);
             }
+            if (!user) {
+              console.log("couldn't find user with user secret: ", userSecret);
+              //TODO: Send mqtt response back to blink LEDS or something
+            } else {
+              /* If user user is not currently registering an RFID chip, he is loading a playlist */
+              if (!user.rfidIsRegistering) {
+                handleLoadPlaylist(message.toString(), user);
 
+                /* If user has initiated registering a RFID chip, we create a new RFID chip */
+              } else {
+                var newRFIDChip = new RfidChip({
+                  userSecret,
+                  user: user._id,
+                  id: rfid,
+                  sonosPlaylistId: ""
+                });
+                // save the user
+                newRFIDChip = await newRFIDChip.save();
+                user.rfidChips.push(newRFIDChip._id);
 
-          }
-        });
+                /* Send response with callback from api request */
+                globalRFIDRegister[user.userSecret](user);
+                globalRFIDRegister[user.userSecret] = null;
+              }
+            }
+          });
         break;
+
       case "device/rfid/playback":
         handlePlayback(message.toString());
         break;
+
       case "device/setdevice":
         handleSetDevice(message.toString());
         break;
+
       default:
         break;
     }
-    console.log(message.toString());
-    //client.end()
   });
-
-  // Get new refresh token every 4 hours
-  setInterval(async () => {
-    const { refreshToken } = await getSonosAccessRefreshTokens({
-      type: "refreshToken",
-      user: "pnodseth@gmail.com"
-    });
-    storeRefreshTokenToDb({
-      refreshToken: refreshToken,
-      user: "pnodseth@gmail.com"
-    });
-  }, 1000 * 60 * 60 * 4);
 
   app.use("/sonos", sonosRoutes);
   app.use("/api", api);

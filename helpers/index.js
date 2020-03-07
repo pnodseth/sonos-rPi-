@@ -1,40 +1,23 @@
 var mongoose = require("mongoose");
 const User = mongoose.model("User");
 const Device = mongoose.model("Device");
-const { startPlayback, togglePlayPause } = require("../api/sonos")
-const globalRFIDRegister = { test: "hei" }
+const { startPlayback, togglePlayPause } = require("../api/sonos");
+const globalRFIDRegister = { test: "hei" };
 
-
-async function handleLoadPlaylist(message) {
+async function handleLoadPlaylist(message, user) {
   const data = JSON.parse(message);
   const { room, rfid, userSecret } = data;
   console.log(`Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
-  User.findOne({ userSecret })
-    .populate('rfidChips', ' -__v -userSecret -user')
-    .populate('devices')
-    .exec(async (err, user) => {
-      if (err) {
-        console.log(err)
-      } else {
-        if (user) {
-          console.log(user)
-          let chip = user.rfidChips.find(el => el.id === rfid)
-          let device = user.devices.find(el => el.deviceName === room)
-          if (chip && device) {
-            const response = await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user._id);
-            console.log("response: ", response)
-          } else if (!chip) {
-            console.log("no chip found with id : ", rfid)
-          } else if (!device) {
-            console.log("no device found with name: ", room)
-          }
-        } else {
-          console.log("no user found with user secret: ", userSecret)
-        }
-      }
-    })
-
-
+  let chip = user.rfidChips.find(el => el.id === rfid);
+  let device = user.devices.find(el => el.deviceName === room);
+  if (chip && device) {
+    const response = await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
+    console.log("response: ", response);
+  } else if (!chip) {
+    console.log("no chip found with id : ", rfid);
+  } else if (!device) {
+    console.log("no device found with name: ", room);
+  }
 }
 
 async function handlePlayback(message) {
@@ -42,29 +25,27 @@ async function handlePlayback(message) {
   const { room, command, userSecret } = data;
   console.log(`Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
   User.findOne({ userSecret })
-    .populate('devices')
+    .populate("devices")
     .exec(async (err, user) => {
       if (err) {
-        console.log(err)
+        console.log(err);
       } else {
         if (user) {
-          let device = user.devices.find(el => el.deviceName === room)
+          let device = user.devices.find(el => el.deviceName === room);
           if (device) {
             const response = await togglePlayPause(device.sonosGroupId, command, user._id);
-            console.log("response: ", response)
+            console.log("response: ", response);
             const data = await response.json();
-            console.log("result: ", data)
+            console.log("result: ", data);
           } else if (!device) {
-            console.log("no device found with name: ", room)
+            console.log("no device found with name: ", room);
           }
         } else {
-          console.log("no user found with user secret: ", userSecret)
+          console.log("no user found with user secret: ", userSecret);
         }
       }
-    })
+    });
 }
-
-
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
 async function handleSetDevice(message) {
@@ -80,9 +61,8 @@ async function handleSetDevice(message) {
       // save new device
       let device = Device.findOne({ userSecret, deviceName }, (err, device) => {
         if (err) {
-          console.log("error finding device: ", err)
+          console.log("error finding device: ", err);
         } else {
-
           if (!device) {
             device = new Device({
               userSecret,
@@ -99,21 +79,16 @@ async function handleSetDevice(message) {
           }
 
           if (!user.devices.includes(device._id)) {
-            user.devices.push(device._id)
-            user.save(function (err) {
+            user.devices.push(device._id);
+            user.save(function(err) {
               if (err) {
                 console.log("TCL: err", err);
               }
-              console.log("saved user with new device")
+              console.log("saved user with new device");
             });
           }
-
         }
-
-
-
-      })
-
+      });
     }
   });
 }
