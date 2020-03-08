@@ -39,9 +39,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 var express_1 = __importDefault(require("express"));
 var body_parser_1 = __importDefault(require("body-parser"));
-var dotenv_1 = __importDefault(require("dotenv"));
 var mongoose_1 = __importDefault(require("mongoose"));
 var passport_1 = __importDefault(require("passport"));
 var cors_1 = __importDefault(require("cors"));
@@ -51,7 +52,6 @@ var http = require("http").createServer(app);
 var config = require("./config/database");
 var api = require("./routes/api");
 var PORT = "3003";
-dotenv_1.default.config();
 /* DB STUFF */
 mongoose_1.default.set("useNewUrlParser", true);
 mongoose_1.default.set("useFindAndModify", false);

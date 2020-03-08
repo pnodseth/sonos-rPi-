@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import passport from "passport";
-import config from "../config/database";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { IUser, IDevice, IRfidChip } from "../models/models.interface";
@@ -54,7 +53,7 @@ router.post("/signin", function(req, res) {
           if (isMatch && !err) {
             // if user is found and password is right create a token
             const jwtContent = { username: user.username, _id: user._id };
-            var token: string = jwt.sign(JSON.stringify(jwtContent), config.secret);
+            var token: string = jwt.sign(JSON.stringify(jwtContent), process.env.DB_SECRET);
             // return the information including token as JSON
             res.json({
               success: true,

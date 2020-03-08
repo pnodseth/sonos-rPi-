@@ -1,6 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import passport from "passport";
 import cors from "cors";
@@ -11,8 +12,6 @@ const http = require("http").createServer(app);
 const config = require("./config/database");
 const api = require("./routes/api");
 const PORT = "3003";
-
-dotenv.config();
 
 /* DB STUFF */
 mongoose.set("useNewUrlParser", true);

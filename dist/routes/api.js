@@ -41,7 +41,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var mongoose_1 = __importDefault(require("mongoose"));
 var passport_1 = __importDefault(require("passport"));
-var database_1 = __importDefault(require("../config/database"));
 var express_1 = __importDefault(require("express"));
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var helpers_1 = require("../helpers");
@@ -91,7 +90,7 @@ router.post("/signin", function (req, res) {
                 if (isMatch && !err) {
                     // if user is found and password is right create a token
                     var jwtContent = { username: user.username, _id: user._id };
-                    var token = jsonwebtoken_1.default.sign(JSON.stringify(jwtContent), database_1.default.secret);
+                    var token = jsonwebtoken_1.default.sign(JSON.stringify(jwtContent), process.env.DB_SECRET);
                     // return the information including token as JSON
                     res.json({
                         success: true,
