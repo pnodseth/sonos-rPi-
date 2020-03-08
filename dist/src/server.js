@@ -53,9 +53,6 @@ var api = require("./routes/api");
 var PORT = "3003";
 dotenv_1.default.config();
 /* DB STUFF */
-mongoose_1.default.set("useNewUrlParser", true);
-mongoose_1.default.set("useFindAndModify", false);
-mongoose_1.default.set("useCreateIndex", true);
 mongoose_1.default
     .connect(process.env.DB_URL, {
     useNewUrlParser: true,

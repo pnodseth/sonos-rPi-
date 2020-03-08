@@ -15,8 +15,11 @@ const PORT = "3003";
 dotenv.config();
 
 /* DB STUFF */
+mongoose.set("useNewUrlParser", true);
+mongoose.set("useFindAndModify", false);
+mongoose.set("useCreateIndex", true);
 mongoose
-  .connect(config.database, {
+  .connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })

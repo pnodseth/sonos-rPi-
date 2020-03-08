@@ -20,7 +20,7 @@ router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
     res.json({ success: false, msg: "Please pass username and password." });
   } else {
-    var newUser: IUser = new User({
+    let newUser: any = new User({
       username: req.body.username,
       password: req.body.password
     });
