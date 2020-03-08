@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,20 +35,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var mongoose = require("mongoose");
-var passport = require("passport");
-var config = require("../config/database");
-require("../config/passport")(passport);
-var express = require("express");
-var jwt = require("jsonwebtoken");
-var router = express.Router();
-var User = mongoose.model("User");
-var RfidChip = mongoose.model("RfidChip");
-var Device = mongoose.model("Device");
+var mongoose_1 = __importDefault(require("mongoose"));
+var passport_1 = __importDefault(require("passport"));
+var database_1 = __importDefault(require("../config/database"));
+var express_1 = __importDefault(require("express"));
+var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+var helpers_1 = require("../helpers");
+require("../config/passport")(passport_1.default);
+var router = express_1.default.Router();
+var User = mongoose_1.default.model("User");
+var RfidChip = mongoose_1.default.model("RfidChip");
+var Device = mongoose_1.default.model("Device");
 var baseSonosApiRequest = require("../api/sonos").baseSonosApiRequest;
 var createAccessTokenFromAuthCodeGrant = require("../api/auth_sonos").createAccessTokenFromAuthCodeGrant;
-var helpers_1 = require("../helpers");
 /* USER HANDLING */
 /* ---------------------- */
 router.post("/signup", function (req, res) {
@@ -87,7 +91,7 @@ router.post("/signin", function (req, res) {
                 if (isMatch && !err) {
                     // if user is found and password is right create a token
                     var jwtContent = { username: user.username, _id: user._id };
-                    var token = jwt.sign(JSON.stringify(jwtContent), config.secret);
+                    var token = jsonwebtoken_1.default.sign(JSON.stringify(jwtContent), database_1.default.secret);
                     // return the information including token as JSON
                     res.json({
                         success: true,
@@ -116,7 +120,7 @@ router.post("/signin", function (req, res) {
 });
 /* ----- DEVICES ---------*/
 /* GET A USER'S SONOSBOX DEVICES */
-router.get("/device", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/device", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     var token = getToken(req.headers);
     if (token) {
         Device.find({ user: req.user._id })
@@ -136,7 +140,7 @@ router.get("/device", passport.authenticate("jwt", { session: false }), function
     }
 });
 /* Associate device with sonos group */
-router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/device/:deviceId/:sonosGroupId", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     var token = getToken(req.headers);
     if (token) {
         Device.findById(req.params.deviceId).exec(function (err, device) {
@@ -175,7 +179,7 @@ router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { ses
     }
 });
 /* Associate RFID Chip with sonos playlist */
-router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     var _this = this;
     var token = getToken(req.headers);
     console.log("rfid: ", req.params.rfidId);
@@ -219,7 +223,7 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jw
 });
 /* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
 where it reverts back to false after 30 sec in case no further action is performed from user. */
-router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/rfid/associate/start", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var token;
         return __generator(this, function (_a) {
@@ -270,7 +274,7 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
 /* THINGS INVOLVING CALLING SONOS API */
 /* Users have to authenticate with sonos in the client app. When they do that successfully, the client calls this endpoint with
 a "code" to retrieve and store access tokens */
-router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.post("/storeinitialtoken", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var token, _a, code_1, redirectUri_1;
         var _this = this;
@@ -316,7 +320,7 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
         });
     });
 });
-router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/gethouseholds", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var token, endpoint_1;
         var _this = this;
@@ -357,7 +361,7 @@ router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), f
         });
     });
 });
-router.get("/getgroups", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/getgroups", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var token, endpoint_2;
         var _this = this;
@@ -397,7 +401,7 @@ router.get("/getgroups", passport.authenticate("jwt", { session: false }), funct
         });
     });
 });
-router.get("/getplaylists", passport.authenticate("jwt", { session: false }), function (req, res) {
+router.get("/getplaylists", passport_1.default.authenticate("jwt", { session: false }), function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var token, endpoint_3;
         var _this = this;

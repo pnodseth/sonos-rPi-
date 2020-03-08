@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,15 +35,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var mqtt = require("mqtt");
-var RfidChip = require("./models/RfidChip");
-var User = require("./models/User");
-var Device = require("./models/Device");
+var mqtt_1 = __importDefault(require("mqtt"));
+var RfidChip_1 = require("./models/RfidChip");
+var User_1 = require("./models/User");
 var helpers_1 = require("./helpers");
-function mqttHan() {
+function mqttHandler() {
     var mqttUrl = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
-    var mqttClient = mqtt.connect(mqttUrl, {
+    var mqttClient = mqtt_1.default.connect(mqttUrl, {
         username: "rnscwaio",
         password: "DXi1Og5mJEej"
     });
@@ -66,7 +69,7 @@ function mqttHan() {
                 console.log("hei!");
                 /* Check if user is currently registering RFID chip. If not, load playlist */
                 var _a = JSON.parse(message), userSecret_1 = _a.userSecret, rfid_1 = _a.rfid;
-                User.findOne({ userSecret: userSecret_1 })
+                User_1.User.findOne({ userSecret: userSecret_1 })
                     .populate("rfidChips", " -__v -userSecret -user")
                     .populate("devices")
                     .exec(function (err, user) { return __awaiter(_this, void 0, void 0, function () {
@@ -85,7 +88,7 @@ function mqttHan() {
                                 helpers_1.handleLoadPlaylist(message.toString(), user);
                                 return [3 /*break*/, 4];
                             case 2:
-                                newRFIDChip = new RfidChip({
+                                newRFIDChip = new RfidChip_1.RfidChip({
                                     userSecret: userSecret_1,
                                     user: user._id,
                                     id: rfid_1,
@@ -116,4 +119,4 @@ function mqttHan() {
         }
     });
 }
-module.exports = mqttHan;
+exports.default = mqttHandler;

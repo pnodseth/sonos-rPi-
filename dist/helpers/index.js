@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,11 +35,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var mongoose = require("mongoose");
-var User = mongoose.model("User");
-var Device = mongoose.model("Device");
+var mongoose_1 = __importDefault(require("mongoose"));
+var Device_1 = require("../models/Device");
 var sonos_1 = require("../api/sonos");
+var User = mongoose_1.default.model("User");
 exports.globalRFIDRegister = { test: "hei" };
 function handleLoadPlaylist(message, user) {
     return __awaiter(this, void 0, void 0, function () {
@@ -135,13 +139,13 @@ function handleSetDevice(message) {
                 }
                 else {
                     // save new device
-                    Device.findOne({ userSecret: userSecret, deviceName: deviceName }, function (err, device) {
+                    Device_1.Device.findOne({ userSecret: userSecret, deviceName: deviceName }, function (err, device) {
                         if (err) {
                             console.log("error finding device: ", err);
                         }
                         else {
                             if (!device) {
-                                device = new Device({
+                                device = new Device_1.Device({
                                     userSecret: userSecret,
                                     deviceName: deviceName,
                                     user: user._id,

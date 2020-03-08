@@ -5,7 +5,12 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "tsc": "tsc",
+    "tsc:w": "tsc -w",
+    "serve": "nodemon dist/server.js",
+    "start": "nodemon dist/server.js \"npm run tsc:w\" ",
+    "start2": "nodemon tsc:w",
+    "start3": "concurrently \"npm run tsc:w\" \"npm run serve\" "
   },
   "keywords": [],
   "author": "",
@@ -35,6 +40,7 @@
   },
   "devDependencies": {
     "@types/mongoose": "^5.7.3",
-    "@types/node": "^13.9.0"
+    "@types/node": "^13.9.0",
+    "concurrently": "^5.1.0"
   }
 }

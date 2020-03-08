@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -34,43 +35,45 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var express = require("express");
-var app = express();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var express_1 = __importDefault(require("express"));
+var body_parser_1 = __importDefault(require("body-parser"));
+var dotenv_1 = __importDefault(require("dotenv"));
+var mongoose_1 = __importDefault(require("mongoose"));
+var passport_1 = __importDefault(require("passport"));
+var cors_1 = __importDefault(require("cors"));
+var mqttHandler_1 = __importDefault(require("./mqttHandler"));
+var app = express_1.default();
 var http = require("http").createServer(app);
-var bodyParser = require("body-parser");
-var dotenv = require("dotenv");
-var mongoose = require("mongoose");
-var passport = require("passport");
-var cors = require("cors");
-var mqttHandler = require("./mqttHan");
 var config = require("./config/database");
-require("./models/User");
-require("./models/RfidChip");
-require("./models/Device");
 var api = require("./routes/api");
 var PORT = "3003";
-dotenv.config();
+dotenv_1.default.config();
 /* DB STUFF */
-mongoose
+mongoose_1.default
     .connect(config.database, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
     .then(function () { return console.log("mongoose connection succesful"); })
     .catch(function (err) { return console.error(err); });
-app.use(cors({
+app.use(cors_1.default({
     origin: ["http://localhost:8080", "http://localhost:8081"],
     optionsSuccessStatus: 200,
     credentials: true
 }));
 /* PASSPORT STUFF */
-app.use(passport.initialize());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(passport_1.default.initialize());
+app.use(express_1.default.json());
+app.use(body_parser_1.default.urlencoded({ extended: true }));
+main();
 function main() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            mqttHandler();
+            mqttHandler_1.default();
             app.use("/api", api);
             http.listen(PORT, function () {
                 console.log("Listening on port " + PORT);

@@ -1,17 +1,17 @@
-const mongoose = require("mongoose");
-const passport = require("passport");
-const config = require("../config/database");
+import mongoose from "mongoose";
+import passport from "passport";
+import config from "../config/database";
+import express from "express";
+import jwt from "jsonwebtoken";
+import { IUser, IDevice, IRfidChip } from "../models/models.interface";
+import { globalRFIDRegister } from "../helpers";
 require("../config/passport")(passport);
-const express = require("express");
-const jwt = require("jsonwebtoken");
 const router = express.Router();
 const User = mongoose.model("User");
 const RfidChip = mongoose.model("RfidChip");
 const Device = mongoose.model("Device");
 const { baseSonosApiRequest } = require("../api/sonos");
 const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
-import { globalRFIDRegister } from "../helpers";
-import { IUser, IDevice, IRfidChip } from "../models/models.interface";
 
 /* USER HANDLING */
 /* ---------------------- */

@@ -1,10 +1,9 @@
 var bcrypt = require("bcrypt-nodejs");
 
-import * as mongoose from "mongoose";
+import { Document, Schema, Model, model, HookNextFunction } from "mongoose";
 import { IUser } from "./models.interface";
-import { Schema } from "mongoose";
 
-var UserSchema: Schema = new mongoose.Schema({
+var UserSchema: Schema = new Schema({
   username: {
     type: String,
     unique: true,
@@ -31,10 +30,10 @@ var UserSchema: Schema = new mongoose.Schema({
     default: ""
   },
   devices: {
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Device" }]
+    type: [{ type: Schema.Types.ObjectId, ref: "Device" }]
   },
   rfidChips: {
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: "RfidChip" }]
+    type: [{ type: Schema.Types.ObjectId, ref: "RfidChip" }]
   },
   rfidIsRegistering: {
     type: Boolean,
@@ -42,7 +41,7 @@ var UserSchema: Schema = new mongoose.Schema({
   }
 });
 
-UserSchema.pre("save", function(next: mongoose.HookNextFunction) {
+UserSchema.pre("save", function(next: HookNextFunction) {
   var user: any = this;
 
   if (this.isNew) {
@@ -75,4 +74,4 @@ UserSchema.methods.comparePassword = function(passw: string, cb: Function) {
   });
 };
 
-export default mongoose.model<IUser>("RfidChip", UserSchema);
+export const User: Model<IUser> = model<IUser>("User", UserSchema);

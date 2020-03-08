@@ -1,15 +1,8 @@
 "use strict";
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var bcrypt = require("bcrypt-nodejs");
-var mongoose = __importStar(require("mongoose"));
-var UserSchema = new mongoose.Schema({
+var mongoose_1 = require("mongoose");
+var UserSchema = new mongoose_1.Schema({
     username: {
         type: String,
         unique: true,
@@ -35,10 +28,10 @@ var UserSchema = new mongoose.Schema({
         default: ""
     },
     devices: {
-        type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Device" }]
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "Device" }]
     },
     rfidChips: {
-        type: [{ type: mongoose.Schema.Types.ObjectId, ref: "RfidChip" }]
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "RfidChip" }]
     },
     rfidIsRegistering: {
         type: Boolean,
@@ -76,4 +69,4 @@ UserSchema.methods.comparePassword = function (passw, cb) {
         cb(null, isMatch);
     });
 };
-exports.default = mongoose.model("RfidChip", UserSchema);
+exports.User = mongoose_1.model("User", UserSchema);

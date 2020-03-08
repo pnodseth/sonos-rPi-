@@ -1,17 +1,14 @@
-const express = require("express");
+import express from "express";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import passport from "passport";
+import cors from "cors";
+import mqttHandler from "./mqttHandler";
+
 const app = express();
 const http = require("http").createServer(app);
-const bodyParser = require("body-parser");
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
-const passport = require("passport");
-const cors = require("cors");
-
-const mqttHandler = require("./mqttHan");
 const config = require("./config/database");
-require("./models/User");
-require("./models/RfidChip");
-require("./models/Device");
 const api = require("./routes/api");
 const PORT = "3003";
 
@@ -38,6 +35,8 @@ app.use(
 app.use(passport.initialize());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+main();
 
 async function main() {
   mqttHandler();

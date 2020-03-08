@@ -1,12 +1,11 @@
-const mqtt = require("mqtt");
-const RfidChip = require("./models/RfidChip");
-const User = require("./models/User");
-const Device = require("./models/Device");
+import mqtt from "mqtt";
+import { RfidChip } from "./models/RfidChip";
+import { User } from "./models/User";
+import { Device } from "./models/Device";
 import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
 
-function mqttHan() {
+export default function mqttHandler() {
   const mqttUrl: string = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
-
   let mqttClient = mqtt.connect(mqttUrl, {
     username: "rnscwaio",
     password: "DXi1Og5mJEej"
@@ -84,5 +83,3 @@ function mqttHan() {
     }
   });
 }
-
-module.exports = mqttHan;

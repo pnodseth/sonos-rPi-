@@ -1,14 +1,13 @@
-import * as mongoose from "mongoose";
+import { Document, Schema, Model, model } from "mongoose";
 import { IRfidChip } from "./models.interface";
-import { Schema } from "mongoose";
 
-const RfidChipSchema: Schema = new mongoose.Schema({
+const RfidChipSchema: Schema = new Schema({
   userSecret: {
     type: String,
     required: true
   },
   user: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
@@ -22,4 +21,4 @@ const RfidChipSchema: Schema = new mongoose.Schema({
   }
 });
 
-export default mongoose.model<IRfidChip>("RfidChip", RfidChipSchema);
+export const RfidChip: Model<IRfidChip> = model<IRfidChip>("RfidChip", RfidChipSchema);

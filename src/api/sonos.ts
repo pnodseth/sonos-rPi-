@@ -1,4 +1,3 @@
-const client = require("../db");
 const fetch = require("node-fetch");
 const { getAccessTokenFromDBorRefreshToken } = require("./auth_sonos");
 

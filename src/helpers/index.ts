@@ -1,8 +1,10 @@
-var mongoose = require("mongoose");
-const User = mongoose.model("User");
-const Device = mongoose.model("Device");
+import mongoose from "mongoose";
+import { Device } from "../models/Device";
 import { startPlayback, togglePlayPause } from "../api/sonos";
 import { IUser, IDevice } from "../models/models.interface";
+
+const User = mongoose.model("User");
+
 export const globalRFIDRegister = { test: "hei" };
 
 type loadPlaylistMessage = {

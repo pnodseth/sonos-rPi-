@@ -1,20 +1,13 @@
 "use strict";
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var mongoose = __importStar(require("mongoose"));
-var RfidChipSchema = new mongoose.Schema({
+var mongoose_1 = require("mongoose");
+var RfidChipSchema = new mongoose_1.Schema({
     userSecret: {
         type: String,
         required: true
     },
     user: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true
     },
@@ -27,4 +20,4 @@ var RfidChipSchema = new mongoose.Schema({
         default: ""
     }
 });
-exports.default = mongoose.model("RfidChip", RfidChipSchema);
+exports.RfidChip = mongoose_1.model("RfidChip", RfidChipSchema);

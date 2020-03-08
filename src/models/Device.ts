@@ -1,14 +1,13 @@
-import * as mongoose from "mongoose";
 import { IDevice } from "./models.interface";
-import { Schema } from "mongoose";
+import { Document, Schema, Model, model } from "mongoose";
 
-var DeviceSchema: Schema = new mongoose.Schema({
+var DeviceSchema: Schema = new Schema({
   userSecret: {
     type: String,
     required: true
   },
   user: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User"
   },
   deviceName: {
@@ -20,4 +19,4 @@ var DeviceSchema: Schema = new mongoose.Schema({
   }
 });
 
-export default mongoose.model<IDevice>("RfidChip", DeviceSchema);
+export const Device: Model<IDevice> = model<IDevice>("Device", DeviceSchema);
