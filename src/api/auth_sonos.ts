@@ -76,7 +76,7 @@ async function getAccessTokenFromDBorRefreshToken(user: IUser) {
   }
 }
 
-async function baseTokenRequest(postData) {
+async function baseTokenRequest(postData: any) {
   const url = "https://api.sonos.com/login/v3/oauth/access";
   const headers = {
     "Content-type": "application/x-www-form-urlencoded",

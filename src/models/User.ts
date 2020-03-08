@@ -43,7 +43,7 @@ var UserSchema: Schema = new mongoose.Schema({
 });
 
 UserSchema.pre("save", function(next: mongoose.HookNextFunction) {
-  var user: IUser = this;
+  var user: any = this;
 
   if (this.isNew) {
     user.userSecret = "SALD-1E12-FASKV912";
