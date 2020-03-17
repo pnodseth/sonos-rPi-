@@ -9,9 +9,8 @@ import mqttHandler from "./mqttHandler";
 
 const app = express();
 const http = require("http").createServer(app);
-const config = require("./config/database");
 const api = require("./routes/api");
-const PORT = "3003";
+const PORT = process.env.port || 3003;
 
 /* DB STUFF */
 mongoose.set("useNewUrlParser", true);
