@@ -5,11 +5,10 @@ import { Device } from "./models/Device";
 import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
 
 export default function mqttHandler() {
-  const mqttUrl: string = "mqtt://hairdresser.cloudmqtt.com:18179";
   console.log("trying to connect to mqtt broker...");
-  let mqttClient = mqtt.connect(mqttUrl, {
-    username: "rnscwaio",
-    password: "DXi1Og5mJEej"
+  let mqttClient = mqtt.connect(process.env.MQTT_URL, {
+    username: process.env.MQTT_USER,
+    password: process.env.MQTT_PASS
   });
 
   mqttClient.on("connect", function() {
