@@ -5,7 +5,8 @@ import { Device } from "./models/Device";
 import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
 
 export default function mqttHandler() {
-  const mqttUrl: string = process.env.NODE_ENV === "production" ? "mqtt://prod-url" : "mqtt://hairdresser.cloudmqtt.com:18179";
+  const mqttUrl: string = "mqtt://hairdresser.cloudmqtt.com:18179";
+  console.log("trying to connect to mqtt broker...");
   let mqttClient = mqtt.connect(mqttUrl, {
     username: "rnscwaio",
     password: "DXi1Og5mJEej"
@@ -25,6 +26,10 @@ export default function mqttHandler() {
     mqttClient.subscribe("device/setdevice", function(err) {
       /* ERROR HANDLING */
     });
+  });
+
+  mqttClient.on("error", function(err) {
+    console.log("mqtt error: ", err);
   });
 
   mqttClient.on("message", function(topic: string, message: string) {
