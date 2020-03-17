@@ -5,12 +5,11 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tsc": "tsc",
-    "tsc:w": "tsc -w",
-    "serve": "nodemon dist/server.js",
-    "start": "nodemon dist/server.js \"npm run tsc:w\" ",
-    "start2": "nodemon tsc:w",
-    "start3": "concurrently \"npm run tsc:w\" \"npm run serve\" "
+    "build-ts": "tsc",
+    "postinstall": "npm run build-ts",
+    "start": "npm run serve",
+    "serve": "node dist/server.js",
+    "dev": "concurrently \"npm run tsc:w\" \"npm run serve\" "
   },
   "keywords": [],
   "author": "",
