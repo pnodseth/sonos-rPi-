@@ -7,7 +7,7 @@
 ## Prod
 
 Deploys to heroku app on push to master.
-Heroku app: https://dashboard.heroku.com/apps/sonosbox-server
+Heroku app: https://sonosbox-server.herokuapp.com/
 
 ## MQTT
 
