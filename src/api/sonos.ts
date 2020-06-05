@@ -81,7 +81,7 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
             body
         });
 
-        console.log("sonosApiRequest response123: ", response.status)
+        console.log("sonosApiRequest response: ", response.status)
 
         //Response ok, playback started
         if (response.ok ) {

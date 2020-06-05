@@ -32,57 +32,66 @@ export default function mqttHandler() {
   });
 
   mqttClient.on("message", function(topic: string, message: string) {
-    // message is Buffer
-    switch (topic) {
-      case "device/rfid/loadPlaylist":
-
-        /* Check if user is currently registering RFID chip. If not, load playlist */
-        const { userSecret, rfid }: { userSecret: string; rfid: string } = JSON.parse(message);
-        User.findOne({ userSecret })
-          .populate("rfidChips", " -__v -userSecret -user")
-          .populate("devices")
-          .exec(async (err: Error, user) => {
-            if (err) {
-              console.log("error finding user with user secret: ", err);
-            }
-            if (!user) {
-              console.log("couldn't find user with user secret: ", userSecret);
-              //TODO: Send mqtt response back to blink LEDS or something
-            } else {
-              /* If user user is not currently registering an RFID chip, he is loading a playlist */
-              if (!user.rfidIsRegistering) {
-                handleLoadPlaylist(message.toString(), user);
-
-                /* If user has initiated registering a RFID chip, we create a new RFID chip */
-              } else {
-                var newRFIDChip = new RfidChip({
-                  userSecret,
-                  user: user._id,
-                  id: rfid,
-                  sonosPlaylistId: ""
-                });
-                // save the user
-                newRFIDChip = await newRFIDChip.save();
-                user.rfidChips.push(newRFIDChip._id);
-
-                /* Send response with callback from api request */
-                globalRFIDRegister[user.userSecret](user);
-                globalRFIDRegister[user.userSecret] = null;
+    const { userSecret, rfid, isDev = false }: { userSecret: string; rfid: string; isDev: boolean } = JSON.parse(message);
+    
+    // If we are in dev mode, we can add isDev to mqtt messages to prevent triggering production server
+    if (process.env.NODE_ENV === "PROD" && isDev) {
+      return 
+    } else {
+      
+      // message is Buffer
+      switch (topic) {
+        case "device/rfid/loadPlaylist":
+  
+          /* Check if user is currently registering RFID chip. If not, load playlist */
+          
+          User.findOne({ userSecret })
+            .populate("rfidChips", " -__v -userSecret -user")
+            .populate("devices")
+            .exec(async (err: Error, user) => {
+              if (err) {
+                console.log("error finding user with user secret: ", err);
               }
-            }
-          });
-        break;
+              if (!user) {
+                console.log("couldn't find user with user secret: ", userSecret);
+                //TODO: Send mqtt response back to blink LEDS or something
+              } else {
+                /* If user user is not currently registering an RFID chip, he is loading a playlist */
+                if (!user.rfidIsRegistering) {
+                  handleLoadPlaylist(message.toString(), user);
+  
+                  /* If user has initiated registering a RFID chip, we create a new RFID chip */
+                } else {
+                  var newRFIDChip = new RfidChip({
+                    userSecret,
+                    user: user._id,
+                    id: rfid,
+                    sonosPlaylistId: ""
+                  });
+                  // save the user
+                  newRFIDChip = await newRFIDChip.save();
+                  user.rfidChips.push(newRFIDChip._id);
+  
+                  /* Send response with callback from api request */
+                  globalRFIDRegister[user.userSecret](user);
+                  globalRFIDRegister[user.userSecret] = null;
+                }
+              }
+            });
+          break;
+  
+        case "device/rfid/playback":
+          handlePlayback(message.toString());
+          break;
+  
+        case "device/setdevice":
+          handleSetDevice(message.toString());
+          break;
+  
+        default:
+          break;
+      }
 
-      case "device/rfid/playback":
-        handlePlayback(message.toString());
-        break;
-
-      case "device/setdevice":
-        handleSetDevice(message.toString());
-        break;
-
-      default:
-        break;
     }
   });
 }
