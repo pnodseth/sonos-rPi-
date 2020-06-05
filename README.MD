@@ -22,11 +22,22 @@ To start app run `pm2 start sonos-server`
 
 Mqtt broker is `https://api.cloudmqtt.com/console/82657838/details`
 MQTT connection variables is stored in .env (and in Heroku Config vars)
-Example mqtt:
+
+
+
+**Example mqtt:**
 
 ```
 topic: device/rfid/loadPlaylist
 message: {"room":"Imre","userSecret":"Heidu","rfid":"131212"}
+
+```
+
+NB!
+If we want to only trigger dev server (which we most likely want to during development), run the following in stead:
+```
+topic: device/rfid/loadPlaylist
+message: {"isDev":true,"room":"Imre","userSecret":"Heidu","rfid":"131212"}
 
 ```
 
