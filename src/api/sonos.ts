@@ -6,13 +6,12 @@ export async function togglePlayPause(room: string, command: string, user) {
     const endpoint = `groups/${room}/playback/${command}`;
     const body = {};
     try {
-        const response: Response = await baseSonosApiRequest({
+        await sonosApiRequest({
             endpoint,
             method: "POST",
             body: JSON.stringify(body),
             user
         });
-        return response;
     } catch (err) {
         console.log(err);
     }
@@ -25,13 +24,12 @@ export async function startPlayback(room: string, playlist: string, user) {
         playOnCompletion: true
     };
     try {
-        const response: Response = await baseSonosApiRequest({
+        sonosApiRequest({
             endpoint,
             method: "POST",
             body: JSON.stringify(body),
             user
         });
-        return response;
     } catch (err) {
         console.log("error", err);
     }
@@ -77,11 +75,13 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
     if (accessToken && refreshToken) {
         headers.Authorization = `Bearer ${accessToken}`
 
-        const response =  fetch(url, {
+        const response =  await fetch(url, {
             headers,
             method,
             body
         });
+
+        console.log("sonosApiRequest response: ", response.status)
 
         //Response ok, playback started
         if (response.ok ) {
@@ -90,16 +90,20 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
 
         // Response not ok
         } else {
+            console.log("sonosApiRequest response not ok")
             // Token expired, get new token
             if (response.status === 401) {
-                const {accessToken } = getNewAccessTokenFromRefreshToken(user)
+                const {accessToken } = await getNewAccessTokenFromRefreshToken(user)
                 headers.Authorization = `Bearer ${accessToken}`
 
-                const response =  fetch(url, {
+                console.log("sonosApiRequest -> trying new request with new token: ", accessToken)
+                const response =  await fetch(url, {
                     headers,
                     method,
                     body
                 });
+
+                console.log("sonosApiRequst response: ", response.status)
 
                 // Request successful
                 if (response.ok) {
@@ -112,6 +116,8 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
                 }
             }
         }
+    } else {
+        console.log("user does not have access and/or refresh token, please re-authorize in web app")
     }
 }
 

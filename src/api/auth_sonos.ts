@@ -95,16 +95,18 @@ async function getNewAccessTokenFromRefreshToken(user: IUser) {
 
     try {
         const response = await baseTokenRequest(postData);
-
+        console.log("getNewAccessTokenFromRefreshToken -> response: ", response.status)
         if (response.ok) {
             let {access_token, refresh_token} = await response.json();
-
+            console.log("getNewAccessTokenFromRefreshToken -> access token: ", access_token)
             user.accessToken = access_token;
             user.refreshToken = refresh_token;
 
 
             try {
+                console.log("getNewAccessTokenFromRefreshToken _> saving new token on user...")
                 await user.save();
+                console.log("getNewAccessTokenFromRefreshToken _> token saved on user")
                 return {
                     accessToken: access_token,
                     refreshToken: refresh_token

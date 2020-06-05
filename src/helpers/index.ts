@@ -19,8 +19,7 @@ export async function handleLoadPlaylist(message: string, user: IUser) {
   let chip = user.rfidChips.find(el => el.id === rfid);
   let device = user.devices.find(el => el.deviceName === room);
   if (chip && device) {
-    const response: any = await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
-    console.log("startplayback response: ", !!response.ok);
+    await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
   } else if (!chip) {
     console.log("no chip found with id : ", rfid);
   } else if (!device) {
