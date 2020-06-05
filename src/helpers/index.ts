@@ -15,7 +15,7 @@ type loadPlaylistMessage = {
 export async function handleLoadPlaylist(message: string, user: IUser) {
   const data: loadPlaylistMessage = JSON.parse(message);
   const { room, rfid, userSecret } = data;
-  console.log(`Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
+  console.log(`handleLoadPlaylist -> Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
   let chip = user.rfidChips.find(el => el.id === rfid);
   let device = user.devices.find(el => el.deviceName === room);
   if (chip && device) {
@@ -35,7 +35,7 @@ type handlePlaybackMessage = {
 export async function handlePlayback(message: string) {
   const data: handlePlaybackMessage = JSON.parse(message);
   const { room, command, userSecret }: handlePlaybackMessage = data;
-  console.log(`Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
+  console.log(`handlePlayback -> Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
   User.findOne({ userSecret })
     .populate("devices")
     .exec(async (err, user: IUser) => {

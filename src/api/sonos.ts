@@ -81,12 +81,12 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
             body
         });
 
-        console.log("sonosApiRequest response: ", response.status)
+        console.log("sonosApiRequest response123: ", response.status)
 
         //Response ok, playback started
         if (response.ok ) {
             console.log(`Sonos API request to endpoint ${endpoint} success`)
-            return;
+            return response;
 
         // Response not ok
         } else {
@@ -108,7 +108,7 @@ export async function sonosApiRequest({endpoint, method, body, user}) {
                 // Request successful
                 if (response.ok) {
                     console.log(`Sonos API request to endpoint ${endpoint} success`)
-                    return
+                    return response
 
                 // Request not successful
                 } else {

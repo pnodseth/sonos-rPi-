@@ -35,7 +35,6 @@ export default function mqttHandler() {
     // message is Buffer
     switch (topic) {
       case "device/rfid/loadPlaylist":
-        console.log("hei!");
 
         /* Check if user is currently registering RFID chip. If not, load playlist */
         const { userSecret, rfid }: { userSecret: string; rfid: string } = JSON.parse(message);

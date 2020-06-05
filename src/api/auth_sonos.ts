@@ -102,7 +102,6 @@ async function getNewAccessTokenFromRefreshToken(user: IUser) {
             user.accessToken = access_token;
             user.refreshToken = refresh_token;
 
-
             try {
                 console.log("getNewAccessTokenFromRefreshToken _> saving new token on user...")
                 await user.save();
