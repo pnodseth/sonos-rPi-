@@ -32,31 +32,17 @@ type handlePlaybackMessage = {
   command: string;
   userSecret: string;
 };
-export async function handlePlayback(message: string) {
+export async function handlePlayback(message: string, user: IUser) {
   const data: handlePlaybackMessage = JSON.parse(message);
   const { room, command, userSecret }: handlePlaybackMessage = data;
   console.log(`handlePlayback -> Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
-  User.findOne({ userSecret })
-    .populate("devices")
-    .exec(async (err, user: IUser) => {
-      if (err) {
-        console.log(err);
-      } else {
-        if (user) {
-          let device = user.devices.find((el) => el.deviceName === room);
-          if (device) {
-            const response: any = await togglePlayPause(device.sonosGroupId, command, user._id);
-            console.log("response: ", response);
-            const data = await response.json();
-            console.log("result: ", data);
-          } else if (!device) {
-            console.log("no device found with name: ", room);
-          }
-        } else {
-          console.log("no user found with user secret: ", userSecret);
-        }
-      }
-    });
+
+  let device = user.devices.find((el) => el.deviceName === room);
+  if (device) {
+    await togglePlayPause(device.sonosGroupId, command, user);
+  } else if (!device) {
+    console.log("no device found with name: ", room);
+  }
 }
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
