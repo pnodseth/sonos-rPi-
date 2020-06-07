@@ -16,8 +16,8 @@ export async function handleLoadPlaylist(message: string, user: IUser) {
   const data: loadPlaylistMessage = JSON.parse(message);
   const { room, rfid, userSecret } = data;
   console.log(`handleLoadPlaylist -> Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
-  let chip = user.rfidChips.find(el => el.id === rfid);
-  let device = user.devices.find(el => el.deviceName === room);
+  let chip = user.rfidChips.find((el) => el.id === rfid);
+  let device = user.devices.find((el) => el.deviceName === room);
   if (chip && device) {
     await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
   } else if (!chip) {
@@ -43,7 +43,7 @@ export async function handlePlayback(message: string) {
         console.log(err);
       } else {
         if (user) {
-          let device = user.devices.find(el => el.deviceName === room);
+          let device = user.devices.find((el) => el.deviceName === room);
           if (device) {
             const response: any = await togglePlayPause(device.sonosGroupId, command, user._id);
             console.log("response: ", response);
@@ -65,6 +65,8 @@ type setDeviceMessage = {
   deviceName: string;
 };
 export async function handleSetDevice(message: string) {
+  console.log("setting device...");
+
   const { userSecret, deviceName }: setDeviceMessage = JSON.parse(message);
   User.findOne({ userSecret }, (err, user: IUser) => {
     if (err) {
@@ -74,29 +76,35 @@ export async function handleSetDevice(message: string) {
       console.log("couldn't find user with user secret: ", userSecret);
       //TODO: Send mqtt response back to blink LEDS or something
     } else {
+      console.log("setDevice -> found user: ", user.userSecret);
+
       // save new device
       Device.findOne({ userSecret, deviceName }, (err: Error, device: IDevice) => {
         if (err) {
           console.log("error finding device: ", err);
         } else {
           if (!device) {
+            console.log("handleSetDevice -> Brand new device! saving it.");
+
             device = new Device({
               userSecret,
               deviceName,
               user: user._id,
-              sonosGroupId: ""
+              sonosGroupId: "",
             });
 
-            device.save(err => {
+            device.save((err) => {
               if (err) {
                 console.log("couldn't save device", err);
               }
             });
+          } else {
+            console.log("handleSetDevice -> Not a new device.");
           }
 
           if (!user.devices.includes(device._id)) {
             user.devices.push(device._id);
-            user.save(function(err) {
+            user.save(function (err) {
               if (err) {
                 console.log("TCL: err", err);
               }
