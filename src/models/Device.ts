@@ -4,19 +4,22 @@ import { Document, Schema, Model, model } from "mongoose";
 var DeviceSchema: Schema = new Schema({
   userSecret: {
     type: String,
-    required: true
+    required: true,
   },
   user: {
     type: Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
   },
   deviceName: {
     type: String,
-    required: true
+    required: true,
   },
   sonosGroupId: {
-    type: String
-  }
+    type: String,
+  },
+  sonosHouseholdId: {
+    type: String,
+  },
 });
 
 export const Device: Model<IDevice> = model<IDevice>("Device", DeviceSchema);

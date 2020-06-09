@@ -19,6 +19,7 @@ export interface IDevice extends Document {
   user: IUser;
   deviceName: string;
   sonosGroupId: string;
+  sonosHouseholdId: string;
 }
 
 export interface IRfidChip extends Document {
