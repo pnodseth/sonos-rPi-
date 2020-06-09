@@ -32,7 +32,10 @@ export default function mqttHandler() {
   });
 
   mqttClient.on("message", function (topic: string, message: string) {
-    const { userSecret, rfid, isDev = false }: { userSecret: string; rfid: string; isDev: boolean } = JSON.parse(message);
+    const { userSecret, rfid, isDev = false }: { userSecret: string; rfid: string; isDev: boolean } = JSON.parse(
+      message
+    );
+    let uS = userSecret.toLowerCase();
 
     // If we are in dev mode, we can add isDev to mqtt messages to prevent triggering production server
     if (process.env.NODE_ENV === "PROD" && isDev) {
@@ -42,8 +45,7 @@ export default function mqttHandler() {
       switch (topic) {
         case "device/rfid/loadPlaylist":
           /* Check if user is currently registering RFID chip. If not, load playlist */
-
-          User.findOne({ userSecret })
+          User.findOne({ userSecret: uS })
             .populate("rfidChips", " -__v -userSecret -user")
             .populate("devices")
             .exec(async (err: Error, user) => {
@@ -61,7 +63,7 @@ export default function mqttHandler() {
                   /* If user has initiated registering a RFID chip, we create a new RFID chip */
                 } else {
                   var newRFIDChip = new RfidChip({
-                    userSecret,
+                    userSecret: uS,
                     user: user._id,
                     id: rfid,
                     sonosPlaylistId: "",
@@ -79,7 +81,7 @@ export default function mqttHandler() {
           break;
 
         case "device/rfid/playback":
-          User.findOne({ userSecret })
+          User.findOne({ userSecret: uS })
             .populate("rfidChips", " -__v -userSecret -user")
             .populate("devices")
             .exec(async (err: Error, user) => {

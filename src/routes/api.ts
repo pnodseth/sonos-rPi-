@@ -10,46 +10,47 @@ const User = mongoose.model("User");
 const RfidChip = mongoose.model("RfidChip");
 const Device = mongoose.model("Device");
 const { baseSonosApiRequest } = require("../api/sonos");
+const { sonosApiRequest } = require("../api/sonos");
 const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
 
 /* USER HANDLING */
 /* ---------------------- */
 
-router.post("/signup", function(req, res) {
+router.post("/signup", function (req, res) {
   if (!req.body.username || !req.body.password) {
     res.json({ success: false, msg: "Please pass username and password." });
   } else {
     let newUser: any = new User({
       username: req.body.username,
-      password: req.body.password
+      password: req.body.password,
     });
     // save the user
-    newUser.save(function(err: Error) {
+    newUser.save(function (err: Error) {
       if (err) {
         console.log("TCL: err", err);
-        return res.json({ success: false, msg: "Username already exists." });
+        return res.status(409).send("User already exists");
       }
-      res.json({ success: true, msg: "Successful created new user." });
+      res.send("success");
     });
   }
 });
 
-router.post("/signin", function(req, res) {
+router.post("/signin", function (req, res) {
   User.findOne(
     {
-      username: req.body.username
+      username: req.body.username,
     },
-    function(err: Error, user: IUser) {
+    function (err: Error, user: IUser) {
       if (err) throw err;
 
       if (!user) {
         res.status(401).send({
           success: false,
-          msg: "Authentication failed. User not found."
+          msg: "Authentication failed. User not found.",
         });
       } else {
         // check if password matches
-        user.comparePassword(req.body.password, function(err: Error, isMatch: boolean) {
+        user.comparePassword(req.body.password, function (err: Error, isMatch: boolean) {
           if (isMatch && !err) {
             // if user is found and password is right create a token
             const jwtContent = { username: user.username, _id: user._id };
@@ -63,13 +64,13 @@ router.post("/signin", function(req, res) {
                 devices: user.devices,
                 rfidChips: user.rfidChips,
                 rfidIsRegistering: user.rfidIsRegistering,
-                userSecret: user.userSecret
-              }
+                userSecret: user.userSecret,
+              },
             });
           } else {
             res.status(401).send({
               success: false,
-              msg: "Authentication failed. Wrong password."
+              msg: "Authentication failed. Wrong password.",
             });
           }
         });
@@ -81,10 +82,26 @@ router.post("/signin", function(req, res) {
     .populate("rfidChips", " -__v -userSecret -user");
 });
 
+/* GET A USER'S Profile */
+router.get("/profile", passport.authenticate("jwt", { session: false }), function (req, res) {
+  var token: string = getToken(req.headers);
+  if (token) {
+    User.findById(req.user._id)
+      .select("-password -accessToken -_id -__v -refreshToken")
+      .populate("devices", " -__v -userSecret -user")
+      .populate("rfidChips", " -__v -userSecret -user")
+      .exec((err: Error, user: IUser) => {
+        res.json({ user });
+      });
+  } else {
+    return res.status(403).send({ success: false, msg: "Unauthorized." });
+  }
+});
+
 /* ----- DEVICES ---------*/
 
 /* GET A USER'S SONOSBOX DEVICES */
-router.get("/device", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/device", passport.authenticate("jwt", { session: false }), function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     Device.find({ user: req.user._id })
@@ -103,7 +120,7 @@ router.get("/device", passport.authenticate("jwt", { session: false }), function
 });
 
 /* Associate device with sonos group */
-router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { session: false }), function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     Device.findById(req.params.deviceId).exec((err: Error, device: IDevice) => {
@@ -112,7 +129,7 @@ router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { ses
         res.send(err);
       } else {
         device.sonosGroupId = req.params.sonosGroupId;
-        device.save(function(err: Error) {
+        device.save(function (err: Error) {
           if (err) {
             console.log("TCL: err", err);
             return res.send(err);
@@ -128,8 +145,8 @@ router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { ses
                   username: user.username,
                   devices: user.devices,
                   rfidChips: user.rfidChips,
-                  userSecret: user.userSecret
-                }
+                  userSecret: user.userSecret,
+                },
               });
             });
         });
@@ -141,7 +158,10 @@ router.get("/device/:deviceId/:sonosGroupId", passport.authenticate("jwt", { ses
 });
 
 /* Associate RFID Chip with sonos playlist */
-router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jwt", { session: false }), function (
+  req,
+  res
+) {
   var token: string = getToken(req.headers);
   console.log("rfid: ", req.params.rfidId);
   if (token) {
@@ -162,8 +182,8 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jw
                 username: user.username,
                 devices: user.devices,
                 rfidChips: user.rfidChips,
-                userSecret: user.userSecret
-              }
+                userSecret: user.userSecret,
+              },
             });
           });
       }
@@ -175,11 +195,11 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId", passport.authenticate("jw
 
 /* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
 where it reverts back to false after 30 sec in case no further action is performed from user. */
-router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     req.user.rfidIsRegistering = true;
-    req.user.save(function(err: Error) {
+    req.user.save(function (err: Error) {
       if (err) {
         console.log("TCL: err", err);
         res.json({ success: false, err: err });
@@ -215,7 +235,7 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
 
 /* Users have to authenticate with sonos in the client app. When they do that successfully, the client calls this endpoint with
 a "code" to retrieve and store access tokens */
-router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     const { code, redirectUri }: { code: string; redirectUri: string } = req.body;
@@ -223,14 +243,44 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
     User.findById(req.user._id).exec(async (err, user: IUser) => {
       if (!err) {
         try {
-          let result = await createAccessTokenFromAuthCodeGrant(code, redirectUri, user);
-          console.log("result: ", result);
-          res.send({
-            success: true,
-            msg: "Successfully stored access token to db"
-          });
+          let response = await createAccessTokenFromAuthCodeGrant(code, redirectUri, user);
+          console.log("response", response);
+          if (response.ok) {
+            let data = await response.json();
+
+            user.accessToken = data.access_token;
+            user.refreshToken = data.refresh_token;
+            user.accessTokenExpirationTimestamp = new Date().getTime() + data.expires_in;
+            user.lastSonosAuthorizationDateString = new Date().toISOString();
+
+            try {
+              await user.save();
+              res.send();
+            } catch (err) {
+              console.log("createAccessTokenFromAuthCodeGrant -> error saving user: ", err);
+
+              res.status(401).send();
+            }
+          } else {
+            console.log("createAccessTokenFromAuthCodeGrant -> error : Handle this error");
+
+            user.lastSonosAuthorizationDateString = "";
+
+            try {
+              await user.save();
+              console.log(user);
+              res.status(401).send();
+            } catch (err) {
+              console.log("createAccessTokenFromAuthCodeGrant -> error saving user: ", err);
+              res.status(401).send();
+            }
+          }
         } catch (err) {
-          console.log("error: ", err);
+          console.log(" storeInitialToken -> error: ", err);
+          user.lastSonosAuthorizationDateString = "";
+          await user.save();
+          res.status(401);
+          res.send();
         }
       } else {
         console.log("error finding user: ", err);
@@ -241,18 +291,20 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
   }
 });
 
-router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     const endpoint = "households";
     try {
       User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await baseSonosApiRequest({
+        const response: any = await sonosApiRequest({
           endpoint,
           method: "get",
-          user
+          user,
         });
+        console.log("response", response);
         const data = await response.json();
+        console.log("gethouseholds -> data", data);
 
         res.json(data);
       });
@@ -265,7 +317,7 @@ router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), a
   }
 });
 
-router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     const endpoint: string = `households/${req.query.household}/groups`;
@@ -274,7 +326,7 @@ router.get("/getgroups", passport.authenticate("jwt", { session: false }), async
         const response: Response = await baseSonosApiRequest({
           endpoint,
           method: "get",
-          user
+          user,
         });
         const data = await response.json();
 
@@ -288,7 +340,7 @@ router.get("/getgroups", passport.authenticate("jwt", { session: false }), async
   }
 });
 
-router.get("/getplaylists", passport.authenticate("jwt", { session: false }), async function(req, res) {
+router.get("/getplaylists", passport.authenticate("jwt", { session: false }), async function (req, res) {
   var token: string = getToken(req.headers);
   if (token) {
     const endpoint: string = `households/${req.query.household}/playlists`;
@@ -297,7 +349,7 @@ router.get("/getplaylists", passport.authenticate("jwt", { session: false }), as
         const response: Response = await baseSonosApiRequest({
           endpoint,
           method: "get",
-          user
+          user,
         });
         const data = await response.json();
 
@@ -323,6 +375,16 @@ function getToken(headers) {
   } else {
     return null;
   }
+}
+
+function clientSafeUserObject(user) {
+  return {
+    username: user.username,
+    devices: user.devices || [],
+    rfidChips: user.rfidChips || [],
+    userSecret: user.userSecret,
+    lastSonosAuthorizationDateString: user.lastSonosAuthorizationDateString || "",
+  };
 }
 
 module.exports = router;

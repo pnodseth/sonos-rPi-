@@ -7,52 +7,57 @@ var UserSchema: Schema = new Schema({
   username: {
     type: String,
     unique: true,
-    required: true
+    required: true,
   },
   password: {
     type: String,
     required: true,
-    select: false
+    select: false,
   },
   userSecret: {
-    type: String
+    type: String,
   },
   accessToken: {
-    type: String
+    type: String,
   },
   accessTokenExpirationTimestamp: {
     type: Number,
-    default: 0
+    default: 0,
   },
 
   refreshToken: {
     type: String,
-    default: ""
+    default: "",
   },
   devices: {
-    type: [{ type: Schema.Types.ObjectId, ref: "Device" }]
+    type: [{ type: Schema.Types.ObjectId, ref: "Device" }],
   },
   rfidChips: {
-    type: [{ type: Schema.Types.ObjectId, ref: "RfidChip" }]
+    type: [{ type: Schema.Types.ObjectId, ref: "RfidChip" }],
   },
   rfidIsRegistering: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
+  lastSonosAuthorizationDateString: {
+    type: String,
+    default: "",
+  },
 });
 
-UserSchema.pre("save", function(next: HookNextFunction) {
+UserSchema.pre("save", function (next: HookNextFunction) {
   var user: any = this;
 
   if (this.isNew) {
-    user.userSecret = "SALD-1E12-FASKV912";
+    let base64 = Buffer.from(user.username).toString("base64");
+    user.userSecret = base64.length >= 12 ? base64.substr(0, 12).toLowerCase() : base64.toLowerCase();
   }
   if (this.isModified("password") || this.isNew) {
-    bcrypt.genSalt(10, function(err, salt: string) {
+    bcrypt.genSalt(10, function (err, salt: string) {
       if (err) {
         return next(err);
       }
-      bcrypt.hash(user.password, salt, null, function(err, hash: string) {
+      bcrypt.hash(user.password, salt, null, function (err, hash: string) {
         if (err) {
           return next(err);
         }
@@ -65,8 +70,8 @@ UserSchema.pre("save", function(next: HookNextFunction) {
   }
 });
 
-UserSchema.methods.comparePassword = function(passw: string, cb: Function) {
-  bcrypt.compare(passw, this.password, function(err, isMatch) {
+UserSchema.methods.comparePassword = function (passw: string, cb: Function) {
+  bcrypt.compare(passw, this.password, function (err, isMatch) {
     if (err) {
       return cb(err);
     }

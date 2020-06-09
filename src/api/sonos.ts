@@ -39,7 +39,7 @@ export async function startPlayback(room: string, playlist: string, user: IUser)
 export async function baseSonosApiRequest({ endpoint, method, body, user }) {
   let url: string = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
   try {
-    const { accessToken }: { accessToken: string } = await getAccessTokenFromDBorRefreshToken(user);
+    const { accessToken }: { accessToken: string } = user;
 
     const headers = {
       "Content-type": "application/json",
@@ -69,17 +69,22 @@ export async function sonosApiRequest({ endpoint, method, body, user }) {
     Host: "api.ws.sonos.com",
   };
 
+  const options: any = {
+    headers,
+    method,
+  };
+
+  if (body) {
+    options.body = body;
+  }
+
   const { accessToken, refreshToken } = user;
 
   // User has tokens in redis, try api request
   if (accessToken && refreshToken) {
     headers.Authorization = `Bearer ${accessToken}`;
 
-    const response = await fetch(url, {
-      headers,
-      method,
-      body,
-    });
+    const response = await fetch(url, options);
 
     console.log("sonosApiRequest response: ", response.status);
 
@@ -97,11 +102,7 @@ export async function sonosApiRequest({ endpoint, method, body, user }) {
         headers.Authorization = `Bearer ${accessToken}`;
 
         console.log("sonosApiRequest -> trying new request with new token: ", accessToken);
-        const response = await fetch(url, {
-          headers,
-          method,
-          body,
-        });
+        const response = await fetch(url, options);
 
         console.log("sonosApiRequst response: ", response.status);
 
@@ -112,10 +113,14 @@ export async function sonosApiRequest({ endpoint, method, body, user }) {
 
           // Request not successful
         } else {
-          console.log(`Sonos API request to endpoint ${endpoint} failed with status ${response.status}: ${response.statusText}`);
+          console.log(
+            `Sonos API request to endpoint ${endpoint} failed with status ${response.status}: ${response.statusText}`
+          );
         }
       } else if (response.status === 410) {
-        console.log(`sonosApiRequest -> SonosPlayer is probably not connected: Response status ${response.status}, text: ${response.statusText}`);
+        console.log(
+          `sonosApiRequest -> SonosPlayer is probably not connected: Response status ${response.status}, text: ${response.statusText}`
+        );
       } else {
         console.log(`sonosApiRequest -> Response status: ${response.status}, ${response.statusText} `);
       }
@@ -129,4 +134,5 @@ module.exports = {
   startPlayback,
   togglePlayPause,
   baseSonosApiRequest,
+  sonosApiRequest,
 };

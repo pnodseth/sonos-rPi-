@@ -6,6 +6,7 @@ export interface IUser extends Document {
   userSecret: string;
   accessToken: string;
   accessTokenExpirationTimestamp: number;
+  lastSonosAuthorizationDateString: string;
   refreshToken: string;
   devices: IDevice[];
   rfidChips: IRfidChip[];
