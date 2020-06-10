@@ -1,4 +1,4 @@
-import { Document, Schema, Model, model } from "mongoose";
+import {  Schema, Model, model } from "mongoose";
 import { IRfidChip } from "./models.interface";
 
 const RfidChipSchema: Schema = new Schema({
@@ -16,6 +16,10 @@ const RfidChipSchema: Schema = new Schema({
     required: true
   },
   sonosPlaylistId: {
+    type: String,
+    default: ""
+  },
+  sonosHouseholdId: {
     type: String,
     default: ""
   }

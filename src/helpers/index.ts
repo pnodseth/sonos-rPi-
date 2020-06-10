@@ -5,7 +5,7 @@ import { IUser, IDevice } from "../models/models.interface";
 
 const User = mongoose.model("User");
 
-export const globalRFIDRegister = { test: "hei" };
+export const globalRFIDRegister = {};
 
 type loadPlaylistMessage = {
   room: string;

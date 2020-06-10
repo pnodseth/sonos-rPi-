@@ -27,4 +27,5 @@ export interface IRfidChip extends Document {
   user: IUser;
   id: string;
   sonosPlaylistId: string;
+  sonosHouseholdId: string;
 }
