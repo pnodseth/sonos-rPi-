@@ -36,7 +36,7 @@ export async function startPlayback(room: string, playlist: string, user: IUser)
   }
 }
 
-export async function baseSonosApiRequest({ endpoint, method, body, user }) {
+export async function baseSonosApiRequest({ endpoint, method, body, user }: {endpoint: string, method: string, body?: string, user: IUser}) {
   let url: string = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
   try {
     const { accessToken }: { accessToken: string } = user;
@@ -61,7 +61,7 @@ export async function baseSonosApiRequest({ endpoint, method, body, user }) {
  * New test functions
  * */
 
-export async function sonosApiRequest({ endpoint, method, body, user }) {
+export async function sonosApiRequest({ endpoint, method, body, user }: {endpoint: string, method: string, body?: string, user: IUser}) {
   let url: string = `https://api.ws.sonos.com/control/api/v1/${endpoint}`;
   const headers = {
     "Content-type": "application/json",

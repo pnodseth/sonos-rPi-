@@ -2,22 +2,21 @@ import mongoose from "mongoose";
 import passport from "passport";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { IUser, IDevice, IRfidChip } from "../models/models.interface";
+import { IUser, IRfidChip } from "../models/models.interface";
 import { globalRFIDRegister } from "../helpers";
 const deviceRoutes = require("./deviceRoutes")
+const sonosRoutes = require("./sonosRoutes")
 require("../config/passport")(passport);
 const router = express.Router();
 const User = mongoose.model("User");
 const RfidChip = mongoose.model("RfidChip");
-const Device = mongoose.model("Device");
-const { baseSonosApiRequest } = require("../api/sonos");
-const { sonosApiRequest } = require("../api/sonos");
-const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
+
 
 /* USER HANDLING */
 /* ---------------------- */
 
 router.use("/device", deviceRoutes);
+router.use("/sonos", sonosRoutes);
 
 router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
@@ -30,7 +29,7 @@ router.post("/signup", function(req, res) {
     // save the user
     newUser.save(function(err: Error) {
       if (err) {
-        console.log("TCL: err", err);
+        console.log("error saving new user: ", err);
         return res.status(409).send("User already exists");
       }
       res.send("success");
@@ -113,26 +112,14 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId/:sonosHouseholdId", passpor
     RfidChip.findById(req.params.rfidId).exec(async (err: Error, chip: IRfidChip) => {
       if (err) {
         console.error(err);
-        res.send(err);
+        res.status(404).send(err);
       } else {
         console.log("found rfid! ", chip);
         chip.sonosPlaylistId = req.params.sonosPlaylistId;
         chip.sonosHouseholdId = req.params.sonosHouseholdId;
         chip = await chip.save();
         console.log("saved chip! ", chip);
-        await User.findById(req.user._id)
-          .populate("devices", " -__v -userSecret -user")
-          .populate("rfidChips", " -__v -userSecret -user")
-          .exec((err: Error, user: IUser) => {
-            res.json({
-              user: {
-                username: user.username,
-                devices: user.devices,
-                rfidChips: user.rfidChips,
-                userSecret: user.userSecret
-              }
-            });
-          });
+        res.send()
       }
     });
   } else {
@@ -180,137 +167,11 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
   }
 });
 
-/* SONOS RELATED */
-/* THINGS INVOLVING CALLING SONOS API */
 
-/* Users have to authenticate with sonos in the client app. When they do that successfully, the client calls this endpoint with
-a "code" to retrieve and store access tokens */
-router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token: string = getToken(req.headers);
-  if (token) {
-    const { code, redirectUri }: { code: string; redirectUri: string } = req.body;
 
-    User.findById(req.user._id).exec(async (err, user: IUser) => {
-      if (!err) {
-        try {
-          let response = await createAccessTokenFromAuthCodeGrant(code, redirectUri, user);
-          console.log("response", response);
-          if (response.ok) {
-            let data = await response.json();
 
-            user.accessToken = data.access_token;
-            user.refreshToken = data.refresh_token;
-            user.accessTokenExpirationTimestamp = new Date().getTime() + data.expires_in;
-            user.lastSonosAuthorizationDateString = new Date().toISOString();
 
-            try {
-              await user.save();
-              res.send();
-            } catch (err) {
-              console.log("createAccessTokenFromAuthCodeGrant -> error saving user: ", err);
 
-              res.status(401).send();
-            }
-          } else {
-            console.log("createAccessTokenFromAuthCodeGrant -> error : Handle this error");
-
-            user.lastSonosAuthorizationDateString = "";
-
-            try {
-              await user.save();
-              console.log(user);
-              res.status(401).send();
-            } catch (err) {
-              console.log("createAccessTokenFromAuthCodeGrant -> error saving user: ", err);
-              res.status(401).send();
-            }
-          }
-        } catch (err) {
-          console.log(" storeInitialToken -> error: ", err);
-          user.lastSonosAuthorizationDateString = "";
-          await user.save();
-          res.status(401);
-          res.send();
-        }
-      } else {
-        console.log("error finding user: ", err);
-      }
-    });
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
-router.get("/gethouseholds", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token: string = getToken(req.headers);
-  if (token) {
-    const endpoint = "households";
-    try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: any = await sonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
-
-        res.json(data);
-      });
-    } catch (err) {
-      console.log(err);
-      res.send(err);
-    }
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
-router.get("/getgroups", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token: string = getToken(req.headers);
-  if (token) {
-    const endpoint: string = `households/${req.query.household}/groups`;
-    try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await baseSonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
-
-        res.json(data);
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
-router.get("/getplaylists", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token: string = getToken(req.headers);
-  if (token) {
-    const endpoint: string = `households/${req.query.household}/playlists`;
-    try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await baseSonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
-
-        res.json(data);
-      });
-    } catch (err) {
-      console.log(err);
-      res.send(err);
-    }
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
 
 export function getToken(headers) {
   if (headers && headers.authorization) {
@@ -325,14 +186,6 @@ export function getToken(headers) {
   }
 }
 
-/*function clientSafeUserObject(user) {
-  return {
-    username: user.username,
-    devices: user.devices || [],
-    rfidChips: user.rfidChips || [],
-    userSecret: user.userSecret,
-    lastSonosAuthorizationDateString: user.lastSonosAuthorizationDateString || ""
-  };
-}*/
+
 
 module.exports = router;
