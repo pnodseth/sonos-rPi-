@@ -20,6 +20,9 @@ var DeviceSchema: Schema = new Schema({
   sonosHouseholdId: {
     type: String,
   },
+  lastPong: {
+    type: Date
+  }
 });
 
 export const Device: Model<IDevice> = model<IDevice>("Device", DeviceSchema);

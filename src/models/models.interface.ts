@@ -15,6 +15,7 @@ export interface IUser extends Document {
 }
 
 export interface IDevice extends Document {
+  lastPong: Date;
   userSecret: string;
   user: IUser;
   deviceName: string;

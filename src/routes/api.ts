@@ -4,7 +4,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { IUser, IDevice, IRfidChip } from "../models/models.interface";
 import { globalRFIDRegister } from "../helpers";
-
+const deviceRoutes = require("./deviceRoutes")
 require("../config/passport")(passport);
 const router = express.Router();
 const User = mongoose.model("User");
@@ -16,6 +16,8 @@ const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
 
 /* USER HANDLING */
 /* ---------------------- */
+
+router.use("/device", deviceRoutes);
 
 router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
@@ -99,69 +101,6 @@ router.get("/profile", passport.authenticate("jwt", { session: false }), functio
   }
 });
 
-/* ----- DEVICES ---------*/
-
-/* GET A USER'S SONOSBOX DEVICES */
-router.get("/device", passport.authenticate("jwt", { session: false }), function(req, res) {
-  var token: string = getToken(req.headers);
-  if (token) {
-    Device.find({ user: req.user._id })
-      .populate("user")
-      .exec((err: Error, devices: IDevice[]) => {
-        if (err) {
-          console.log("error finding devices: ", err);
-          res.send(err);
-        } else {
-          res.send(devices);
-        }
-      });
-  } else {
-    return res.status(403).send({ success: false, msg: "Unauthorized." });
-  }
-});
-
-/* Associate device with sonos group */
-router.get(
-  "/device/:deviceId/:sonosGroupId/:sonosHouseholdId",
-  passport.authenticate("jwt", { session: false }),
-  function(req, res) {
-    var token: string = getToken(req.headers);
-    if (token) {
-      Device.findById(req.params.deviceId).exec((err: Error, device: IDevice) => {
-        if (err) {
-          console.log("error finding device: ", err);
-          res.send(err);
-        } else {
-          device.sonosGroupId = req.params.sonosGroupId;
-          device.sonosHouseholdId = req.params.sonosHouseholdId;
-          device.save(function(err: Error) {
-            if (err) {
-              console.log("TCL: err", err);
-              return res.send(err);
-            }
-            User.findById(req.user._id)
-              .populate("devices", " -__v -userSecret -user")
-              .populate("rfidChips", " -__v -userSecret -user")
-              .exec((err: Error, user: IUser) => {
-                res.json({
-                  success: true,
-                  msg: "Successful associated device with sonos group",
-                  user: {
-                    username: user.username,
-                    devices: user.devices,
-                    rfidChips: user.rfidChips,
-                    userSecret: user.userSecret
-                  }
-                });
-              });
-          });
-        }
-      });
-    } else {
-      return res.status(403).send({ success: false, msg: "Unauthorized." });
-    }
-  }
-);
 
 /* Associate RFID Chip with sonos playlist */
 router.get("/rfid/associate/:rfidId/:sonosPlaylistId/:sonosHouseholdId", passport.authenticate("jwt", { session: false }), function(
@@ -373,7 +312,7 @@ router.get("/getplaylists", passport.authenticate("jwt", { session: false }), as
   }
 });
 
-function getToken(headers) {
+export function getToken(headers) {
   if (headers && headers.authorization) {
     var parted = headers.authorization.split(" ");
     if (parted.length === 2) {

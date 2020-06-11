@@ -2,14 +2,16 @@ import mqtt from "mqtt";
 import { RfidChip } from "./models/RfidChip";
 import { User } from "./models/User";
 import { Device } from "./models/Device";
-import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
+import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister, handleDevicePong } from "./helpers";
+
+console.log("trying to connect to mqtt broker...");
+const mqttClient = mqtt.connect(process.env.MQTT_URL, {
+  username: process.env.MQTT_USER,
+  password: process.env.MQTT_PASS,
+});
 
 export default function mqttHandler() {
-  console.log("trying to connect to mqtt broker...");
-  let mqttClient = mqtt.connect(process.env.MQTT_URL, {
-    username: process.env.MQTT_USER,
-    password: process.env.MQTT_PASS,
-  });
+
 
   mqttClient.on("connect", function () {
     console.log("mqtt connected");
@@ -25,6 +27,10 @@ export default function mqttHandler() {
     mqttClient.subscribe("device/setdevice", function (err) {
       /* ERROR HANDLING */
     });
+
+    mqttClient.subscribe("device/pong", function() {
+      /*ERROR HANDLING*/
+    })
   });
 
   mqttClient.on("error", function (err) {
@@ -106,9 +112,17 @@ export default function mqttHandler() {
           handleSetDevice(message.toString());
           break;
 
+        case "device/pong":
+          handleDevicePong(message.toString())
+
         default:
           break;
       }
     }
   });
+}
+
+export function devicePing(deviceName: string, userSecret: string): any {
+  console.log(`Sending ping to device: ${deviceName}/${userSecret}`);
+  mqttClient.publish(`todevice/${userSecret}/${deviceName}`, "ping")
 }

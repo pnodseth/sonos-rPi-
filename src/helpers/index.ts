@@ -12,6 +12,7 @@ type loadPlaylistMessage = {
   rfid: string;
   userSecret: string;
 };
+
 export async function handleLoadPlaylist(message: string, user: IUser) {
   const data: loadPlaylistMessage = JSON.parse(message);
   const { room, rfid, userSecret } = data;
@@ -34,6 +35,7 @@ type handlePlaybackMessage = {
   command: string;
   userSecret: string;
 };
+
 export async function handlePlayback(message: string, user: IUser) {
   const data: handlePlaybackMessage = JSON.parse(message);
   const { room, command, userSecret }: handlePlaybackMessage = data;
@@ -54,6 +56,7 @@ type setDeviceMessage = {
   userSecret: string;
   deviceName: string;
 };
+
 export async function handleSetDevice(message: string) {
   console.log("setting device...");
 
@@ -82,7 +85,7 @@ export async function handleSetDevice(message: string) {
               userSecret: uS,
               deviceName,
               user: user._id,
-              sonosGroupId: "",
+              sonosGroupId: ""
             });
 
             device.save((err) => {
@@ -96,11 +99,55 @@ export async function handleSetDevice(message: string) {
 
           if (!user.devices.includes(device._id)) {
             user.devices.push(device._id);
-            user.save(function (err) {
+            user.save(function(err) {
               if (err) {
                 console.log("TCL: err", err);
               }
               console.log("saved user with new device");
+            });
+          }
+        }
+      });
+    }
+  });
+}
+
+export async function handleDevicePong(message: string) {
+  console.log("handling device pong");
+
+  const { userSecret, deviceName }: setDeviceMessage = JSON.parse(message);
+  let uS = userSecret.toLowerCase();
+
+  User.findOne({ userSecret: uS }, (err, user: IUser) => {
+    if (err) {
+      console.log("error finding user with user secret: ", err);
+    }
+    if (!user) {
+      console.log("couldn't find user with user secret: ", userSecret);
+
+    } else {
+      console.log("handleDevicePong -> found user: ", user.userSecret);
+
+      // save new device
+      Device.findOne({ userSecret: uS, deviceName }, (err: Error, device: IDevice) => {
+        if (err) {
+          console.log("error finding device: ", err);
+        } else {
+          if (!device) {
+            console.log("handleDevicePong -> Found no device with devicename: ", deviceName);
+
+
+          } else {
+            console.log("handleDevicePong -> Setting device lastPong on device: ", deviceName);
+
+            device.lastPong = new Date();
+
+            device.save((err) => {
+              if (err) {
+                console.log("couldn't save device", err);
+              } else {
+                console.log("device lastPong updated");
+              }
             });
           }
         }
