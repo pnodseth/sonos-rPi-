@@ -1,7 +1,7 @@
 import { IUser } from "../models/models.interface";
 
 const fetch = require("node-fetch");
-const { getAccessTokenFromDBorRefreshToken, getNewAccessTokenFromRefreshToken } = require("./auth_sonos");
+const {  getNewAccessTokenFromRefreshToken } = require("./auth_sonos");
 
 export async function togglePlayPause(room: string, command: string, user: IUser) {
   const endpoint = `groups/${room}/playback/${command}`;
