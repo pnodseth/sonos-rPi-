@@ -50,40 +50,50 @@ router.get("/:deviceName", passport.authenticate("jwt", { session: false }), fun
 });
 
 
-
 /* Create new Device*/
-router.post("/:id", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.post("/", passport.authenticate("jwt", { session: false }), (req, res) => {
   const token: string = getToken(req.headers);
+
   if (token) {
-    Device.findOne({ user: req.user._id, deviceName: req.params.deviceName })
+    const {deviceId} = req.body
+
+    Device.findOne({ user: req.user._id, deviceId })
       .exec((err: Error, device: IDevice) => {
         if (err) {
-          console.log("error finding device: ", err);
-          res.status(404).send(err);
+          res.status(500).send();
         } else {
-          res.json(device);
+
+          // Device with that ID already exists
+          if (device) {
+            res.status(409).send();
+
+            // Create new device
+          } else {
+            device = new Device({
+              deviceId,
+              user: req.user._id,
+            });
+
+            device.save((err) => {
+              if (err) {
+                res.status(500).send()
+              } else {
+                res.status(201).json(device)
+              }
+            });
+
+            //TODO: Also save device on User devices[]
+          }
         }
       });
 
     // Create new device
- /*   device = new Device({
-      userSecret: uS,
-      deviceName,
-      user: user._id,
-      sonosGroupId: ""
-    });
 
-    device.save((err) => {
-      if (err) {
-        console.log("couldn't save device", err);
-      }
-    });*/
 
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
 });
-
 
 
 /* UPDATE Device*/
@@ -111,51 +121,50 @@ router.put("/:deviceName", passport.authenticate("jwt", { session: false }), fun
 });
 
 // Verify Device ID (check that it exists in uuid file
-router.get("/:id/verify/", passport.authenticate("jwt", {session: false}), async function(req,res) {
+router.get("/:id/verify/", passport.authenticate("jwt", { session: false }), async function(req, res) {
   const token: string = getToken(req.headers);
-  const {id} = req.params
+  const { id } = req.params;
   console.log("ID:  ", id);
 
   if (token) {
-    let foundDeviceId = data.find(e => e.deviceId === id)
+    let foundDeviceId = data.find(e => e.deviceId === id);
     console.log("found device!");
     if (foundDeviceId) {
-      res.send()
+      res.send();
 
     } else {
-      return res.status(404).send()
+      return res.status(404).send();
     }
 
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
 
-})
+});
 
-router.get("/:id/setuser/", passport.authenticate("jwt", {session: false}), async function(req,res) {
+router.get("/:id/setuser/", passport.authenticate("jwt", { session: false }), async function(req, res) {
   const token: string = getToken(req.headers);
-  const {id} = req.params
+  const { id } = req.params;
   if (token) {
     const uuidList = data;
-    let foundDeviceId = uuidList.find(e => e.deviceId === id)
-    console.log("data:", uuidList)
+    let foundDeviceId = uuidList.find(e => e.deviceId === id);
+    console.log("data:", uuidList);
 
     if (foundDeviceId) {
-      foundDeviceId.assignedUserId = req.user._id
+      foundDeviceId.assignedUserId = req.user._id;
       console.log("Updated list: ", uuidList);
-      await updateUuidList(uuidList)
+      await updateUuidList(uuidList);
 
     } else {
-      return res.status(404).send()
+      return res.status(404).send();
     }
-    res.send()
+    res.send();
 
   } else {
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
 
-})
-
+});
 
 
 /* Assign device with sonos group */
@@ -169,7 +178,7 @@ router.post(
 
     if (token) {
 
-      const {sonosGroupId, sonosHouseholdId}: {sonosGroupId: string, sonosHouseholdId: string} = req.body;
+      const { sonosGroupId, sonosHouseholdId }: { sonosGroupId: string, sonosHouseholdId: string } = req.body;
 
       Device.findById(req.params.id).exec(async (err: Error, device: IDevice) => {
         if (err) {
@@ -192,7 +201,6 @@ router.post(
     }
   }
 );
-
 
 
 /* PING device*/
