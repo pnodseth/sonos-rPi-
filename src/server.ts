@@ -26,7 +26,7 @@ mongoose
 
 app.use(
   cors({
-    origin: ["http://localhost:8080", "http://localhost:8081"],
+    origin: ["http://localhost:8080", "http://localhost:8081", "http://192.168.2.180:8080"],
     optionsSuccessStatus: 200,
     credentials: true
   })

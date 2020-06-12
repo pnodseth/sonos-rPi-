@@ -49,8 +49,9 @@ UserSchema.pre("save", function (next: HookNextFunction) {
   var user: any = this;
 
   if (this.isNew) {
-    let base64 = Buffer.from(user.username).toString("base64");
-    user.userSecret = base64.length >= 12 ? base64.substr(0, 12).toLowerCase() : base64.toLowerCase();
+    //let base64 = Buffer.from(user.username).toString("base64");
+    //user.userSecret = base64.length >= 12 ? base64.substr(0, 12).toLowerCase() : base64.toLowerCase();
+    user.userSecret = user.username;
   }
   if (this.isModified("password") || this.isNew) {
     bcrypt.genSalt(10, function (err, salt: string) {
