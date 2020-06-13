@@ -115,9 +115,14 @@ export async function handleSetDevice(message: string) {
 export async function handleDevicePong(message: string) {
   console.log("handling device pong");
 
-  const { userSecret, deviceName }: setDeviceMessage = JSON.parse(message);
-  let uS = userSecret.toLowerCase();
+  const { userSecret = "", deviceName = "" }: setDeviceMessage = JSON.parse(message);
 
+  let uS = userSecret
+
+  if (uS) {
+    uS = userSecret.toLowerCase();
+  }
+  console.log("hgfhgf");
   User.findOne({ userSecret: uS }, (err, user: IUser) => {
     if (err) {
       console.log("error finding user with user secret: ", err);

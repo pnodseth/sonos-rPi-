@@ -1,7 +1,6 @@
 import mqtt from "mqtt";
 import { RfidChip } from "./models/RfidChip";
 import { User } from "./models/User";
-import { Device } from "./models/Device";
 import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister, handleDevicePong } from "./helpers";
 
 console.log("trying to connect to mqtt broker...");
@@ -16,15 +15,16 @@ export default function mqttHandler() {
   mqttClient.on("connect", function () {
     console.log("mqtt connected");
 
-    mqttClient.subscribe("device/rfid/loadPlaylist", function (err) {
+
+    mqttClient.subscribe("device/rfid/loadPlaylist", function () {
       /* ERROR HANDLING */
     });
 
-    mqttClient.subscribe("device/rfid/playback", function (err) {
+    mqttClient.subscribe("device/rfid/playback", function () {
       /* ERROR HANDLING */
     });
 
-    mqttClient.subscribe("device/setdevice", function (err) {
+    mqttClient.subscribe("device/setdevice", function () {
       /* ERROR HANDLING */
     });
 
@@ -38,10 +38,13 @@ export default function mqttHandler() {
   });
 
   mqttClient.on("message", function (topic: string, message: string) {
-    const { userSecret, rfid, isDev = false }: { userSecret: string; rfid: string; isDev: boolean } = JSON.parse(
+    const { userSecret = "", rfid = "", isDev = false }: { userSecret: string; rfid: string; isDev: boolean } = JSON.parse(
       message
     );
-    let uS = userSecret.toLowerCase();
+    let uS = userSecret
+    if (userSecret) {
+     uS = userSecret.toLowerCase();
+    }
 
     // If we are in dev mode, we can add isDev to mqtt messages to prevent triggering production server
     if (process.env.NODE_ENV === "PROD" && isDev) {
@@ -113,6 +116,7 @@ export default function mqttHandler() {
           break;
 
         case "device/pong":
+
           handleDevicePong(message.toString())
 
         default:
@@ -120,6 +124,7 @@ export default function mqttHandler() {
       }
     }
   });
+  return mqttClient
 }
 
 export function devicePing(deviceName: string, userSecret: string): any {

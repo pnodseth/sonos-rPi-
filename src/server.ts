@@ -7,6 +7,7 @@ import passport from "passport";
 import cors from "cors";
 import mqttHandler from "./mqttHandler";
 import socketHandler from "./socketHandler";
+import { MqttClient } from "mqtt";
 
 const app = express();
 const http = require("http").createServer(app);
@@ -42,8 +43,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 main();
 
 async function main() {
-  mqttHandler();
-  socketHandler(io);
+  let mqttClient: MqttClient;
+  mqttClient = mqttHandler();
+  socketHandler(io, mqttClient);
   app.use("/api", api);
 
   http.listen(PORT, () => {
