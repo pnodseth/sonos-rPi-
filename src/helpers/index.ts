@@ -7,74 +7,54 @@ const User = mongoose.model("User");
 
 export const globalRFIDRegister = {};
 
-type loadPlaylistMessage = {
-  room: string;
-  rfid: string;
-  userSecret: string;
-};
+export async function handleLoadPlaylist(deviceId: string, rfid: string, user: IUser) {
 
-export async function handleLoadPlaylist(message: string, user: IUser) {
-  const data: loadPlaylistMessage = JSON.parse(message);
-  const { room, rfid, userSecret } = data;
   console.log(
-    `handleLoadPlaylist -> Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`
+    `handleLoadPlaylist -> Got a request for device: ${deviceId} and rfid: ${rfid} and user: ${user.username}`
   );
   let chip = user.rfidChips.find((el) => el.id === rfid);
-  let device = user.devices.find((el) => el.deviceName === room);
+  let device = user.devices.find((el) => el.deviceId === deviceId);
   if (chip && device) {
     await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
   } else if (!chip) {
     console.log("no chip found with id : ", rfid);
   } else if (!device) {
-    console.log("no device found with name: ", room);
+    console.log("no device found with name: ", deviceId);
   }
 }
 
-type handlePlaybackMessage = {
-  room: string;
-  command: string;
-  userSecret: string;
-};
 
-export async function handlePlayback(message: string, user: IUser) {
-  const data: handlePlaybackMessage = JSON.parse(message);
-  const { room, command, userSecret }: handlePlaybackMessage = data;
+
+export async function handlePlayback(deviceId, command, user: IUser) {
   console.log(
-    `handlePlayback -> Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`
+    `handlePlayback -> Got a request with device: ${deviceId} and command: ${command} and user: ${user.username}`
   );
 
-  let device = user.devices.find((el) => el.deviceName === room);
+  let device = user.devices.find((el) => el.deviceId === deviceId);
   if (device) {
     await togglePlayPause(device.sonosGroupId, command, user);
   } else if (!device) {
-    console.log("no device found with name: ", room);
+    console.log("no device found with id: ", deviceId);
   }
 }
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
-type setDeviceMessage = {
-  userSecret: string;
-  deviceName: string;
-};
 
-export async function handleSetDevice(message: string) {
+export async function handleSetDevice(userId: string, deviceId: string) {
   console.log("setting device...");
 
-  const { userSecret, deviceName }: setDeviceMessage = JSON.parse(message);
-  let uS = userSecret.toLowerCase();
-
-  User.findOne({ userSecret: uS }, (err, user: IUser) => {
+  User.findById(userId, (err, user: IUser) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
     }
     if (!user) {
-      console.log("couldn't find user with user secret: ", userSecret);
+      console.log("couldn't find user with userId: ", userId);
       //TODO: Send mqtt response back to blink LEDS or something
     } else {
-      console.log("setDevice -> found user: ", user.userSecret);
+      console.log("setDevice -> found user: ", user._id);
 
       // save new device
-      Device.findOne({ userSecret: uS, deviceName }, (err: Error, device: IDevice) => {
+      Device.findOne({ deviceId }, (err: Error, device: IDevice) => {
         if (err) {
           console.log("error finding device: ", err);
         } else {
@@ -82,10 +62,8 @@ export async function handleSetDevice(message: string) {
             console.log("handleSetDevice -> Brand new device! saving it.");
 
             device = new Device({
-              userSecret: uS,
-              deviceName,
               user: user._id,
-              sonosGroupId: ""
+              deviceId,
             });
 
             device.save((err) => {

@@ -31,10 +31,10 @@ router.get("/", passport.authenticate("jwt", { session: false }), function(req, 
 
 
 /* GET single Device*/
-router.get("/:deviceName", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/:deviceId", passport.authenticate("jwt", { session: false }), function(req, res) {
   const token: string = getToken(req.headers);
   if (token) {
-    Device.findOne({ user: req.user._id, deviceName: req.params.deviceName })
+    Device.findOne({ user: req.user._id, deviceId: req.params.deviceId })
       .exec((err: Error, device: IDevice) => {
         if (err) {
           console.log("error finding device: ", err);
@@ -78,7 +78,6 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
               if (err) {
                 res.status(500).send();
               } else {
-                //TODO: Also save device on User devices[]
                 req.user.devices.push(device._id);
                 req.user.save((err) => {
                   if (err) {
@@ -106,7 +105,7 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
 
 
 /* UPDATE Device*/
-router.put("/:deviceName", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.put("/:deviceId", passport.authenticate("jwt", { session: false }), function(req, res) {
   const token: string = getToken(req.headers);
   if (token) {
 
@@ -114,7 +113,7 @@ router.put("/:deviceName", passport.authenticate("jwt", { session: false }), fun
     console.log(typeof updatedDevice);
 
 
-    Device.replaceOne({ user: req.user._id, deviceName: req.params.deviceName }, updatedDevice, (err) => {
+    Device.replaceOne({ user: req.user._id, deviceId: req.params.deviceId }, updatedDevice, (err) => {
       if (err) {
         console.log("error finding device: ", err);
         res.status(404).send(err);
@@ -213,10 +212,10 @@ router.post(
 
 
 /* PING device*/
-router.get("/:deviceName/ping", passport.authenticate("jwt", { session: false }), function(req, res) {
+router.get("/:deviceId/ping", passport.authenticate("jwt", { session: false }), function(req, res) {
   const token: string = getToken(req.headers);
   if (token) {
-    devicePing(req.params.deviceName, req.user.userSecret);
+    devicePing(req.params.deviceId);
     res.send();
 
   } else {

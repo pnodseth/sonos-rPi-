@@ -1,7 +1,9 @@
+import path from "path";
+
 const fs = require("fs")
 const fileName = "uuids.json"
-const fullpath = __dirname + "/" + fileName;
-
+const fullpath = path.resolve(__dirname, '..', '..') + '/data/' + fileName
+console.log("FULL PATH:::::", fullpath)
 
 export const data: Array<deviceUuids> = JSON.parse(fs.readFileSync(fullpath, "utf8"))
 

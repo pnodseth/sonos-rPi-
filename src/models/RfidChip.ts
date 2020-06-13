@@ -2,11 +2,7 @@ import {  Schema, Model, model } from "mongoose";
 import { IRfidChip } from "./models.interface";
 
 const RfidChipSchema: Schema = new Schema({
-  userSecret: {
-    type: String,
-    required: true
-  },
-  user: {
+  userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true

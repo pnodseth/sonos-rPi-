@@ -3,7 +3,6 @@ import { Document } from "mongoose";
 export interface IUser extends Document {
   username: string;
   password: string;
-  userSecret: string;
   accessToken: string;
   accessTokenExpirationTimestamp: number;
   lastSonosAuthorizationDateString: string;
@@ -15,8 +14,8 @@ export interface IUser extends Document {
 }
 
 export interface IDevice extends Document {
+  deviceId: string;
   lastPong: Date;
-  userSecret: string;
   user: IUser;
   deviceName: string;
   sonosGroupId: string;
@@ -24,7 +23,6 @@ export interface IDevice extends Document {
 }
 
 export interface IRfidChip extends Document {
-  userSecret: string;
   user: IUser;
   id: string;
   sonosPlaylistId: string;

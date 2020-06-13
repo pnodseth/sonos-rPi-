@@ -76,11 +76,11 @@ router.post("/signin", function(req, res) {
               success: true,
               token: "JWT " + token,
               user: {
+                _id: user._id,
                 username: user.username,
                 devices: user.devices,
                 rfidChips: user.rfidChips,
                 rfidIsRegistering: user.rfidIsRegistering,
-                userSecret: user.userSecret
               }
             });
           } else {
@@ -94,8 +94,8 @@ router.post("/signin", function(req, res) {
     }
   )
     .select("+password")
-    .populate("devices", " -__v -userSecret -user")
-    .populate("rfidChips", " -__v -userSecret -user");
+    .populate("devices", " -__v  -user")
+    .populate("rfidChips", " -__v  -user");
 });
 
 /* GET A USER'S Profile */
@@ -103,9 +103,9 @@ router.get("/profile", passport.authenticate("jwt", { session: false }), functio
   var token: string = getToken(req.headers);
   if (token) {
     User.findById(req.user._id)
-      .select("-password -accessToken -_id -__v -refreshToken")
-      .populate("devices", " -__v -userSecret -user")
-      .populate("rfidChips", " -__v -userSecret -user")
+      .select("-password -accessToken  -__v -refreshToken")
+      .populate("devices", " -__v  -user")
+      .populate("rfidChips", " -__v  -user")
       .exec((err: Error, user: IUser) => {
         res.json({ user });
       });
@@ -156,18 +156,18 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
 
       /*Cancel registration process after 15 sec. */
       setTimeout(() => {
-        if (typeof globalRFIDRegister[req.user.userSecret] === "function") {
+        if (typeof globalRFIDRegister[req.user._id] === "function") {
           console.log("RFID registration timeout. Reverting registration to previous state");
           req.user.rfidIsRegistering = false;
           req.user.save();
-          globalRFIDRegister[req.user.userSecret] = null;
+          globalRFIDRegister[req.user._id] = null;
           res.status(408);
           res.send()
         }
       }, 15 * 1000);
 
       /* Create a callback function which is triggered when user triggers RFID Chip */
-      globalRFIDRegister[req.user.userSecret] = async (savedUser: IUser) => {
+      globalRFIDRegister[req.user._id] = async (savedUser: IUser) => {
         console.log("this shit works!");
         savedUser.rfidIsRegistering = false;
         await savedUser.save();

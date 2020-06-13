@@ -1,6 +1,6 @@
 var bcrypt = require("bcrypt-nodejs");
 
-import { Document, Schema, Model, model, HookNextFunction } from "mongoose";
+import { Schema, Model, model, HookNextFunction } from "mongoose";
 import { IUser } from "./models.interface";
 
 var UserSchema: Schema = new Schema({
@@ -13,9 +13,6 @@ var UserSchema: Schema = new Schema({
     type: String,
     required: true,
     select: false,
-  },
-  userSecret: {
-    type: String,
   },
   accessToken: {
     type: String,
@@ -51,7 +48,6 @@ UserSchema.pre("save", function (next: HookNextFunction) {
   if (this.isNew) {
     //let base64 = Buffer.from(user.username).toString("base64");
     //user.userSecret = base64.length >= 12 ? base64.substr(0, 12).toLowerCase() : base64.toLowerCase();
-    user.userSecret = user.username;
   }
   if (this.isModified("password") || this.isNew) {
     bcrypt.genSalt(10, function (err, salt: string) {
