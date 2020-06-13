@@ -2,7 +2,7 @@ import { IDevice } from "./models.interface";
 import { Document, Schema, Model, model } from "mongoose";
 
 var DeviceSchema: Schema = new Schema({
-  userSecret: {
+  deviceId: {
     type: String,
     required: true,
   },
@@ -12,16 +12,19 @@ var DeviceSchema: Schema = new Schema({
   },
   deviceName: {
     type: String,
-    required: true,
+    default: "My Device"
   },
   sonosGroupId: {
     type: String,
+    default: ""
   },
   sonosHouseholdId: {
     type: String,
+    default: ""
   },
   lastPong: {
-    type: Date
+    type: Date || null,
+    default: null
   }
 });
 
