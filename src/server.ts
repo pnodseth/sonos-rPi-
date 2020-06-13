@@ -6,9 +6,11 @@ import mongoose from "mongoose";
 import passport from "passport";
 import cors from "cors";
 import mqttHandler from "./mqttHandler";
+import socketHandler from "./socketHandler";
 
 const app = express();
 const http = require("http").createServer(app);
+const io = require("socket.io")(http);
 const api = require("./routes/api");
 const PORT = process.env.PORT || 3003;
 
@@ -41,7 +43,7 @@ main();
 
 async function main() {
   mqttHandler();
-
+  socketHandler(io);
   app.use("/api", api);
 
   http.listen(PORT, () => {
