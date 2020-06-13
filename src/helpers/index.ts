@@ -112,38 +112,31 @@ export async function handleSetDevice(message: string) {
   });
 }
 
-export async function handleDevicePong(message: string) {
-  console.log("handling device pong");
+export async function handleSaveDevicePong(userId: string, deviceId: string) {
 
-  const { userSecret = "", deviceName = "" }: setDeviceMessage = JSON.parse(message);
 
-  let uS = userSecret
 
-  if (uS) {
-    uS = userSecret.toLowerCase();
-  }
-  console.log("hgfhgf");
-  User.findOne({ userSecret: uS }, (err, user: IUser) => {
+  User.findOne({ userId }, (err, user: IUser) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
     }
     if (!user) {
-      console.log("couldn't find user with user secret: ", userSecret);
+      console.log(`couldn't find user with userId: ${userId}`, );
 
     } else {
-      console.log("handleDevicePong -> found user: ", user.userSecret);
+      console.log("handleDevicePong -> found user: ", user.username);
 
-      // save new device
-      Device.findOne({ userSecret: uS, deviceName }, (err: Error, device: IDevice) => {
+      // Update device lastPong
+      Device.findOne({ deviceId, userId }, (err: Error, device: IDevice) => {
         if (err) {
           console.log("error finding device: ", err);
         } else {
           if (!device) {
-            console.log("handleDevicePong -> Found no device with devicename: ", deviceName);
+            console.log("handleDevicePong -> Found no device with deviceId: ", deviceId);
 
 
           } else {
-            console.log("handleDevicePong -> Setting device lastPong on device: ", deviceName);
+            console.log("handleDevicePong -> Setting device lastPong on device: ", deviceId);
 
             device.lastPong = new Date();
 

@@ -1,7 +1,7 @@
 import mqtt from "mqtt";
 import { RfidChip } from "./models/RfidChip";
 import { User } from "./models/User";
-import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister, handleDevicePong } from "./helpers";
+import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister, handleSaveDevicePong } from "./helpers";
 
 console.log("trying to connect to mqtt broker...");
 const mqttClient = mqtt.connect(process.env.MQTT_URL, {
@@ -117,7 +117,7 @@ export default function mqttHandler() {
 
         case "device/pong":
 
-          handleDevicePong(message.toString())
+          handleSaveDevicePong(message.toString())
 
         default:
           break;
