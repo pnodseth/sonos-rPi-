@@ -117,7 +117,7 @@ export default function mqttHandler() {
 
         case "device/pong":
 
-          handleSaveDevicePong(message.toString())
+          //handleSaveDevicePong(message.toString())
 
         default:
           break;

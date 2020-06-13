@@ -55,7 +55,7 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
   const token: string = getToken(req.headers);
 
   if (token) {
-    const {deviceId} = req.body
+    const { deviceId } = req.body;
 
     Device.findOne({ user: req.user._id, deviceId })
       .exec((err: Error, device: IDevice) => {
@@ -71,18 +71,27 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
           } else {
             device = new Device({
               deviceId,
-              user: req.user._id,
+              user: req.user._id
             });
 
             device.save((err) => {
               if (err) {
-                res.status(500).send()
+                res.status(500).send();
               } else {
-                res.status(201).json(device)
+                //TODO: Also save device on User devices[]
+                req.user.devices.push(device._id);
+                req.user.save((err) => {
+                  if (err) {
+                    res.status(500).send()
+                  } else {
+                  res.status(201).json(device);
+
+                  }
+                });
               }
             });
 
-            //TODO: Also save device on User devices[]
+
           }
         }
       });
