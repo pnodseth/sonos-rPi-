@@ -5,6 +5,7 @@ const {  getNewAccessTokenFromRefreshToken } = require("./auth_sonos");
 
 export async function togglePlayPause(sonosGroupId: string, command: string, user: IUser) {
   const endpoint = `groups/${sonosGroupId}/playback/${command}`;
+  console.log("endpoint: ", endpoint);
   const body = {};
   try {
     await sonosApiRequest({

@@ -152,6 +152,8 @@ router.get("/rfid/associate/start", passport.authenticate("jwt", { session: fals
       if (err) {
         console.log("TCL: err", err);
         res.json({ success: false, err: err });
+      } else {
+        console.log("user is registering rfid chip...");
       }
 
       /*Cancel registration process after 15 sec. */

@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { Device } from "../models/Device";
 import { startPlayback, togglePlayPause } from "../api/sonos";
-import { IUser, IDevice } from "../models/models.interface";
+import { IDevice, IUser } from "../models/models.interface";
+import { RfidChip } from "../models/RfidChip";
 
 const User = mongoose.model("User");
 
@@ -24,18 +25,25 @@ export async function handleLoadPlaylist(deviceId: string, rfid: string, user: I
 }
 
 
-
-export async function handlePlayback(deviceId, command, user: IUser) {
+export async function handleSonosCommands(deviceId: string, command: string, rfid: string, user: IUser) {
   console.log(
     `handlePlayback -> Got a request with device: ${deviceId} and command: ${command} and user: ${user.username}`
   );
 
-  let device = user.devices.find((el) => el.deviceId === deviceId);
-  if (device) {
-    await togglePlayPause(device.sonosGroupId, command, user);
-  } else if (!device) {
-    console.log("no device found with id: ", deviceId);
+  // Custom handling for "play" command.
+  if (command === "play") {
+    console.log(`chip id: ${rfid}`);
+    handleLoadPlaylist(deviceId, rfid, user);
+  } else {
+    let device = user.devices.find((el) => el.deviceId === deviceId);
+
+    if (device) {
+      await togglePlayPause(device.sonosGroupId, command, user);
+    } else if (!device) {
+      console.log("no device found with id: ", deviceId);
+    }
   }
+
 }
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
@@ -63,7 +71,7 @@ export async function handleSetDevice(userId: string, deviceId: string) {
 
             device = new Device({
               user: user._id,
-              deviceId,
+              deviceId
             });
 
             device.save((err) => {
@@ -93,13 +101,12 @@ export async function handleSetDevice(userId: string, deviceId: string) {
 export async function handleSaveDevicePong(userId: string, deviceId: string) {
 
 
-
   User.findOne({ userId }, (err, user: IUser) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
     }
     if (!user) {
-      console.log(`couldn't find user with userId: ${userId}`, );
+      console.log(`couldn't find user with userId: ${userId}`);
 
     } else {
       console.log("handleDevicePong -> found user: ", user.username);
@@ -130,4 +137,20 @@ export async function handleSaveDevicePong(userId: string, deviceId: string) {
       });
     }
   });
+}
+
+export async function createChip(user: IUser, rfid) {
+  console.log(`creating new chip with id ${rfid}`);
+
+  let newRFIDChip = new RfidChip({
+    userId: user._id,
+    id: rfid
+  });
+  // save the user
+  newRFIDChip = await newRFIDChip.save();
+  user.rfidChips.push(newRFIDChip._id);
+
+  /* Send response with callback from api request */
+  globalRFIDRegister[user._id](user);
+  globalRFIDRegister[user._id] = null;
 }

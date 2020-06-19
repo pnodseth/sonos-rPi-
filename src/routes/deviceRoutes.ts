@@ -2,9 +2,9 @@ import express from "express";
 import passport from "passport";
 import { devicePing } from "../mqttHandler";
 import { getToken } from "./api";
-import { IDevice } from "../models/models.interface";
+import { IDevice, IUser } from "../models/models.interface";
 import { Device } from "../models/Device";
-import { data, updateUuidList } from "../data/deviceUuids";
+import { data, updateUuidList } from "../helpers/deviceUuids";
 
 const router = express.Router();
 
@@ -57,8 +57,9 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
   if (token) {
     const { deviceId } = req.body;
 
-    Device.findOne({ user: req.user._id, deviceId })
-      .exec((err: Error, device: IDevice) => {
+    Device.findOne({ deviceId })
+      .exec(async (err: Error, device: IDevice) => {
+
         if (err) {
           res.status(500).send();
         } else {
@@ -69,28 +70,12 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
 
             // Create new device
           } else {
-            device = new Device({
-              deviceId,
-              user: req.user._id
-            });
-
-            device.save((err) => {
-              if (err) {
-                res.status(500).send();
-              } else {
-                req.user.devices.push(device._id);
-                req.user.save((err) => {
-                  if (err) {
-                    res.status(500).send()
-                  } else {
-                  res.status(201).json(device);
-
-                  }
-                });
-              }
-            });
-
-
+            try {
+            const device = await createDevice(deviceId, req.user);
+            res.status(201).json(device)
+            } catch(err) {
+              res.status(500).send()
+            }
           }
         }
       });
@@ -222,6 +207,41 @@ router.get("/:deviceId/ping", passport.authenticate("jwt", { session: false }), 
     return res.status(403).send({ success: false, msg: "Unauthorized." });
   }
 });
+
+
+function createDevice(deviceId:string, user:IUser) {
+  return new Promise((res, rej) => {
+    if (process.env.NODE_ENV === "PROD") {
+      //todo: Add deviceId and userId to redis, for faster lookup
+      //redis.set(deviceId,userId)
+    }
+
+    const device = new Device({
+      deviceId,
+      user: user._id
+    });
+
+    device.save((err) => {
+      if (err) {
+        //res.status(500).send();
+        rej()
+      } else {
+        user.devices.push(device._id);
+        user.save((err) => {
+          if (err) {
+            rej()
+          } else {
+            res(device)
+
+          }
+        });
+      }
+    });
+
+  })
+
+}
+
 
 
 module.exports = router;
