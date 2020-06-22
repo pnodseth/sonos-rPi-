@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Device } from "../models/Device";
-import { startPlayback, handlePlaybackCommand } from "../api/sonos";
+import { startPlayback, handlePlaybackCommand, handleVolumeChange } from "../api/sonos";
 import { IDevice, IUser } from "../models/models.interface";
 import { RfidChip } from "../models/RfidChip";
 
@@ -34,6 +34,8 @@ export async function handleSonosCommands(device: IDevice, command: string, rfid
   if (command === "play") {
     console.log(`chip id: ${rfid}`);
     handleLoadPlaylist(device.deviceId, rfid, user);
+  } else if (command.includes("volume")) {
+    await handleVolumeChange(device.sonosGroupId, command, user);
   } else {
     await handlePlaybackCommand(device.sonosGroupId, command, user);
   }

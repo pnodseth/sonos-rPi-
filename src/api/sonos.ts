@@ -19,6 +19,24 @@ export async function handlePlaybackCommand(sonosGroupId: string, command: strin
   }
 }
 
+export async function handleVolumeChange(sonosGroupId: string, command: string, user: IUser) {
+  const endpoint = `groups/${sonosGroupId}/groupVolume/relative`;
+  console.log("endpoint: ", endpoint);
+  const body = {
+    volumeDelta: command === "volumeUp" ? 5 : -5
+  };
+  try {
+    await sonosApiRequest({
+      endpoint,
+      method: "POST",
+      body: JSON.stringify(body),
+      user,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 export async function startPlayback(sonosGroupId: string, playlist: string, user: IUser) {
   const endpoint: string = `groups/${sonosGroupId}/playlists`;
   const body = {
@@ -131,9 +149,4 @@ export async function sonosApiRequest({ endpoint, method, body, user }: {endpoin
   }
 }
 
-module.exports = {
-  startPlayback,
-  handlePlaybackCommand,
-  baseSonosApiRequest,
-  sonosApiRequest,
-};
+
