@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 import { User } from "./models/User";
-import { createChip, handleLoadPlaylist, handleSonosCommands, handleSetDevice } from "./helpers";
+import { createChip, handleSonosCommands, handleSetDevice } from "./helpers";
 import { Device } from "./models/Device";
 
 console.log("trying to connect to mqtt broker...");
@@ -54,7 +54,7 @@ export default function mqttHandler() {
         }
 
         Device.findOne({deviceId},(err, device) => {
-          if (err) {
+          if (err || !device) {
             console.log(`mqttHandler -> ${topic} -> no device with deviceId ${deviceId} found`);
           } else {
             console.log(`device found for id ${deviceId}:`);
@@ -78,7 +78,7 @@ export default function mqttHandler() {
                         if (!device?.sonosGroupId) {
                           console.log(`No sonos speaker assigned to device ${device?.deviceId}`);
                         } else {
-                          handleSonosCommands(deviceId, command,rfid,  user);
+                          handleSonosCommands(device, command,rfid,  user);
                         }
                       }
                     }

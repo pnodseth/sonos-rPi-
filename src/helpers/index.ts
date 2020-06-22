@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Device } from "../models/Device";
-import { startPlayback, togglePlayPause } from "../api/sonos";
+import { startPlayback, handlePlaybackCommand } from "../api/sonos";
 import { IDevice, IUser } from "../models/models.interface";
 import { RfidChip } from "../models/RfidChip";
 
@@ -25,23 +25,17 @@ export async function handleLoadPlaylist(deviceId: string, rfid: string, user: I
 }
 
 
-export async function handleSonosCommands(deviceId: string, command: string, rfid: string, user: IUser) {
+export async function handleSonosCommands(device: IDevice, command: string, rfid: string, user: IUser) {
   console.log(
-    `handlePlayback -> Got a request with device: ${deviceId} and command: ${command} and user: ${user.username}`
+    `handlePlayback -> Got a request with device: ${device.deviceId} and command: ${command} and user: ${user.username}`
   );
 
   // Custom handling for "play" command.
   if (command === "play") {
     console.log(`chip id: ${rfid}`);
-    handleLoadPlaylist(deviceId, rfid, user);
+    handleLoadPlaylist(device.deviceId, rfid, user);
   } else {
-    let device = user.devices.find((el) => el.deviceId === deviceId);
-
-    if (device) {
-      await togglePlayPause(device.sonosGroupId, command, user);
-    } else if (!device) {
-      console.log("no device found with id: ", deviceId);
-    }
+    await handlePlaybackCommand(device.sonosGroupId, command, user);
   }
 
 }

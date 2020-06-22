@@ -3,7 +3,7 @@ import { IUser } from "../models/models.interface";
 const fetch = require("node-fetch");
 const {  getNewAccessTokenFromRefreshToken } = require("./auth_sonos");
 
-export async function togglePlayPause(sonosGroupId: string, command: string, user: IUser) {
+export async function handlePlaybackCommand(sonosGroupId: string, command: string, user: IUser) {
   const endpoint = `groups/${sonosGroupId}/playback/${command}`;
   console.log("endpoint: ", endpoint);
   const body = {};
@@ -26,7 +26,7 @@ export async function startPlayback(sonosGroupId: string, playlist: string, user
     playOnCompletion: true,
   };
   try {
-    sonosApiRequest({
+    await sonosApiRequest({
       endpoint,
       method: "POST",
       body: JSON.stringify(body),
@@ -105,7 +105,7 @@ export async function sonosApiRequest({ endpoint, method, body, user }: {endpoin
         console.log("sonosApiRequest -> trying new request with new token: ", accessToken);
         const response = await fetch(url, options);
 
-        console.log("sonosApiRequst response: ", response.status);
+        console.log("sonosApiRequest response: ", response.status);
 
         // Request successful
         if (response.ok) {
@@ -133,7 +133,7 @@ export async function sonosApiRequest({ endpoint, method, body, user }: {endpoin
 
 module.exports = {
   startPlayback,
-  togglePlayPause,
+  handlePlaybackCommand,
   baseSonosApiRequest,
   sonosApiRequest,
 };
