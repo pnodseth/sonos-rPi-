@@ -8,19 +8,17 @@ const User = mongoose.model("User");
 
 export const globalRFIDRegister = {};
 
-export async function handleLoadPlaylist(deviceId: string, rfid: string, user: IUser) {
+export async function handleLoadPlaylist(device: IDevice, rfid: string, user: IUser) {
 
   console.log(
-    `handleLoadPlaylist -> Got a request for device: ${deviceId} and rfid: ${rfid} and user: ${user.username}`
+    `handleLoadPlaylist -> Got a request for device: ${device.deviceId} and rfid: ${rfid} and user: ${user.username}`
   );
   let chip = user.rfidChips.find((el) => el.id === rfid);
-  let device = user.devices.find((el) => el.deviceId === deviceId);
+
   if (chip && device) {
-    await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
+    await startPlayback(device, chip.sonosPlaylistId, user);
   } else if (!chip) {
     console.log("no chip found with id : ", rfid);
-  } else if (!device) {
-    console.log("no device found with name: ", deviceId);
   }
 }
 
@@ -33,7 +31,7 @@ export async function handleSonosCommands(device: IDevice, command: string, rfid
   // Custom handling for "play" command.
   if (command === "play") {
     console.log(`chip id: ${rfid}`);
-    handleLoadPlaylist(device.deviceId, rfid, user);
+    handleLoadPlaylist(device, rfid, user);
   } else if (command.includes("volume")) {
     await handleVolumeChange(device.sonosGroupId, command, user);
   } else {
