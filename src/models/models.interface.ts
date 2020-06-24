@@ -14,6 +14,7 @@ export interface IUser extends Document {
 }
 
 export interface IDevice extends Document {
+  sonosGroupIdParsed: string;
   deviceId: string;
   lastPong: Date;
   user: IUser;

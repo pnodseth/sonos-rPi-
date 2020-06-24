@@ -171,7 +171,7 @@ router.post(
 
     if (token) {
 
-      const { sonosGroupId, sonosHouseholdId }: { sonosGroupId: string, sonosHouseholdId: string } = req.body;
+      const { sonosGroupId, sonosGroupIdParsed, sonosHouseholdId }: { sonosGroupId: string, sonosHouseholdId: string, sonosGroupIdParsed: string } = req.body;
 
       Device.findById(req.params.id).exec(async (err: Error, device: IDevice) => {
         if (err) {
@@ -180,6 +180,7 @@ router.post(
         } else {
           device.sonosGroupId = sonosGroupId;
           device.sonosHouseholdId = sonosHouseholdId;
+          device.sonosGroupIdParsed = sonosGroupIdParsed;
           await device.save(function(err: Error) {
             if (err) {
               console.log("TCL: err", err);
