@@ -3,7 +3,7 @@ import passport from "passport";
 import { getToken } from "./api";
 import { IUser } from "../models/models.interface";
 import { User } from "../models/User";
-import { baseSonosApiRequest, sonosApiRequest } from "../api/sonos";
+import { sonosApiRequest } from "../api/sonos";
 const { createAccessTokenFromAuthCodeGrant } = require("../api/auth_sonos");
 
 const router = express.Router();
@@ -52,7 +52,7 @@ router.get("/households/:householdId/groups", passport.authenticate("jwt", { ses
     const endpoint: string = `households/${req.params.householdId}/groups`;
     try {
       User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await baseSonosApiRequest({
+        const response: Response = await sonosApiRequest({
           endpoint,
           method: "get",
           user
@@ -76,7 +76,7 @@ router.get("/households/:householdId/playlists", passport.authenticate("jwt", { 
     const endpoint: string = `households/${req.params.householdId}/playlists`;
     try {
       User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await baseSonosApiRequest({
+        const response: Response = await sonosApiRequest({
           endpoint,
           method: "get",
           user
