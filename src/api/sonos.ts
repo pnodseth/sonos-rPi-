@@ -54,10 +54,18 @@ export async function startPlayback(device: IDevice, playlist: string, user: IUs
       user
     });
 
+    if (response.ok) {
+      console.log(`Sonos play request successful`);
+
+    }
+
     if (response && response.status === 410) {
       // Sometimes when sonos speakers are unplugged, they receive a new partlyid when coming back online.
       // The first part of the id is the same, and the second, after a ':' is new. If the device is not to be found
       // when receiving a play request, check if it has got a new id, and if so, update stored device with new id.
+      console.log(
+        `sonosApiRequest -> SonosPlayer is probably not connected: Response status ${response.status}, text: ${response.statusText}`
+      );
 
       try {
         const endpoint: string = `households/${device.sonosHouseholdId}/groups`;
@@ -73,17 +81,13 @@ export async function startPlayback(device: IDevice, playlist: string, user: IUs
           let correctGroup = groups.find(e => getParsedGroupId(e.id) === device.sonosGroupIdParsed);
 
           // If group id has changed, reassign device
-          if (correctGroup.id !== device.sonosGroupId) {
+          if (correctGroup && correctGroup.id !== device.sonosGroupId) {
 
             await reassignGroup(correctGroup, device);
             console.log("device updated with correct sonos group info. Trying new play request...");
             await startPlayback(device, playlist, user);
-            return;
-          } else {
-            // do nothing
-            console.log("Sonos group is still the same, no need to reassign.");
-            return;
           }
+            return;
         } else {
           console.log("No sonos groups.. All sonos devices offline?");
           return;
@@ -131,29 +135,21 @@ export async function sonosApiRequest({ endpoint, method, body, user }: { endpoi
 
     const response = await fetch(url, options);
 
-    console.log("sonosApiRequest response: ", response.status);
-
     //Response ok, playback started
     if (response.ok) {
-      console.log(`Sonos API request to endpoint ${endpoint} success`);
       return response;
 
       // Response not ok
     } else {
-      console.log("sonosApiRequest response not ok");
       // Token expired, get new token
       if (response.status === 401) {
         const { accessToken } = await getNewAccessTokenFromRefreshToken(user);
         headers.Authorization = `Bearer ${accessToken}`;
 
-        console.log("sonosApiRequest -> trying new request with new token: ", accessToken);
         const response = await fetch(url, options);
-
-        console.log("sonosApiRequest response: ", response.status);
 
         // Request successful
         if (response.ok) {
-          console.log(`Sonos API request to endpoint ${endpoint} success`);
           return response;
 
           // Request not successful
@@ -161,13 +157,9 @@ export async function sonosApiRequest({ endpoint, method, body, user }: { endpoi
           console.log(
             `Sonos API request to endpoint ${endpoint} failed with status ${response.status}: ${response.statusText}`
           );
+          return response
         }
-      } else if (response.status === 410) {
-        console.log(
-          `sonosApiRequest -> SonosPlayer is probably not connected: Response status ${response.status}, text: ${response.statusText}`
-        );
-        return response;
-      } else {
+      }  else {
         console.log(`sonosApiRequest -> Response status: ${response.status}, ${response.statusText} `);
         return response;
       }
