@@ -9,7 +9,7 @@ import mqttHandler from "./mqttHandler";
 
 const app = express();
 const http = require("http").createServer(app);
-const io = require("socket.io")(http);
+//const io = require("socket.io")(http);
 const api = require("./routes/api");
 const PORT = process.env.PORT || 3003;
 
@@ -43,6 +43,9 @@ main();
 async function main() {
   mqttHandler();
   app.use("/api", api);
+  app.get("/", (req,res) => {
+    res.send("helluuuu")
+  })
 
   http.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);

@@ -46,12 +46,6 @@ export default function mqttHandler() {
         return;
       } else {
 
-        if (process.env.NODE_ENV === "prod") {
-          //todo: Get user from redis
-          //GET user from redis
-          //const userId = redis.get(deviceId)
-          //Also, maybe store access/refresh tokens in redis, and pass them along instead of user object
-        }
 
         Device.findOne({deviceId},(err, device) => {
           if (err || !device) {
