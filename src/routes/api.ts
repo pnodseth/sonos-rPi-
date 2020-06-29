@@ -18,16 +18,7 @@ const RfidChip = mongoose.model("RfidChip");
 router.use("/device", deviceRoutes);
 router.use("/sonos", sonosRoutes);
 
-router.get("/", (req,res) => {
-  res.send("hellu from appppi")
-})
-router.post("/", (req,res) => {
-  res.send("hellu from appppi POST")
-})
 
-router.get("/test", (req,res) => {
-  res.send("testing another endpoint")
-})
 
 router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
