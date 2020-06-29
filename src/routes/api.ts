@@ -25,6 +25,10 @@ router.post("/", (req,res) => {
   res.send("hellu from appppi POST")
 })
 
+router.get("/test", (req,res) => {
+  res.send("testing another endpoint")
+})
+
 router.post("/signup", function(req, res) {
   if (!req.body.username || !req.body.password) {
     res.json({ success: false, msg: "Please pass username and password." });
