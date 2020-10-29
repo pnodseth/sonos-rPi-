@@ -1,21 +1,34 @@
 import { IDevice } from "./models.interface";
-import { Document, Schema, Model, model } from "mongoose";
+import {  Schema, Model, model } from "mongoose";
 
 var DeviceSchema: Schema = new Schema({
-  userSecret: {
+  deviceId: {
     type: String,
-    required: true
+    required: true,
   },
   user: {
     type: Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
   },
   deviceName: {
     type: String,
-    required: true
+    default: "My Device"
   },
   sonosGroupId: {
-    type: String
+    type: String,
+    default: ""
+  },
+  sonosGroupIdParsed: {
+    type: String,
+    default: ""
+  },
+  sonosHouseholdId: {
+    type: String,
+    default: ""
+  },
+  lastPong: {
+    type: Date || null,
+    default: null
   }
 });
 

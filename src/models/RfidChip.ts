@@ -1,12 +1,8 @@
-import { Document, Schema, Model, model } from "mongoose";
+import {  Schema, Model, model } from "mongoose";
 import { IRfidChip } from "./models.interface";
 
 const RfidChipSchema: Schema = new Schema({
-  userSecret: {
-    type: String,
-    required: true
-  },
-  user: {
+  userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true
@@ -16,6 +12,10 @@ const RfidChipSchema: Schema = new Schema({
     required: true
   },
   sonosPlaylistId: {
+    type: String,
+    default: ""
+  },
+  sonosHouseholdId: {
     type: String,
     default: ""
   }

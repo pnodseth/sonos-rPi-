@@ -9,6 +9,7 @@ import mqttHandler from "./mqttHandler";
 
 const app = express();
 const http = require("http").createServer(app);
+//const io = require("socket.io")(http);
 const api = require("./routes/api");
 const PORT = process.env.PORT || 3003;
 
@@ -26,7 +27,7 @@ mongoose
 
 app.use(
   cors({
-    origin: ["http://localhost:8080", "http://localhost:8081"],
+    origin: ["http://localhost:8080", "http://localhost:8081", "http://192.168.2.180:8080", "https://zoonooz.pnodseth.dev"],
     optionsSuccessStatus: 200,
     credentials: true
   })
@@ -41,8 +42,10 @@ main();
 
 async function main() {
   mqttHandler();
-
   app.use("/api", api);
+  app.get("/", (req,res) => {
+    res.send("helluuuu")
+  })
 
   http.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);

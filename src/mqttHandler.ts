@@ -1,89 +1,107 @@
 import mqtt from "mqtt";
-import { RfidChip } from "./models/RfidChip";
 import { User } from "./models/User";
+import { createChip, handleSonosCommands, handleSetDevice } from "./helpers";
 import { Device } from "./models/Device";
-import { handleLoadPlaylist, handlePlayback, handleSetDevice, globalRFIDRegister } from "./helpers";
+
+console.log("trying to connect to mqtt broker...");
+const mqttClient = mqtt.connect(process.env.MQTT_URL, {
+  username: process.env.MQTT_USER,
+  password: process.env.MQTT_PASS,
+});
 
 export default function mqttHandler() {
-  console.log("trying to connect to mqtt broker...");
-  let mqttClient = mqtt.connect(process.env.MQTT_URL, {
-    username: process.env.MQTT_USER,
-    password: process.env.MQTT_PASS
-  });
 
-  mqttClient.on("connect", function() {
+
+  mqttClient.on("connect", function () {
     console.log("mqtt connected");
 
-    mqttClient.subscribe("device/rfid/loadPlaylist", function(err) {
+
+    mqttClient.subscribe("device/rfid/loadPlaylist", function () {
       /* ERROR HANDLING */
     });
 
-    mqttClient.subscribe("device/rfid/playback", function(err) {
+    mqttClient.subscribe("device/rfid/playback", function () {
       /* ERROR HANDLING */
     });
 
-    mqttClient.subscribe("device/setdevice", function(err) {
+    mqttClient.subscribe("device/setdevice", function () {
       /* ERROR HANDLING */
     });
+
+    mqttClient.subscribe("device/pong", function() {
+      /*ERROR HANDLING*/
+    })
   });
 
-  mqttClient.on("error", function(err) {
+  mqttClient.on("error", function (err) {
     console.log("mqtt error: ", err);
   });
 
-  mqttClient.on("message", function(topic: string, message: string) {
-    // message is Buffer
-    switch (topic) {
-      case "device/rfid/loadPlaylist":
-        console.log("hei!");
+  mqttClient.on("message", function (topic: string, message: string) {
+     const {deviceId, rfid, isDev, command} = JSON.parse(message)
 
-        /* Check if user is currently registering RFID chip. If not, load playlist */
-        const { userSecret, rfid }: { userSecret: string; rfid: string } = JSON.parse(message);
-        User.findOne({ userSecret })
-          .populate("rfidChips", " -__v -userSecret -user")
-          .populate("devices")
-          .exec(async (err: Error, user) => {
-            if (err) {
-              console.log("error finding user with user secret: ", err);
+
+    // If we are in dev mode, we can add isDev to mqtt messages to prevent triggering production server
+      if (process.env.NODE_ENV === "PROD" && isDev) {
+        return;
+      } else {
+
+
+        Device.findOne({deviceId},(err, device) => {
+          if (err || !device) {
+            console.log(`mqttHandler -> ${topic} -> no device with deviceId ${deviceId} found`);
+          } else {
+            console.log(`device found for id ${deviceId}:`);
+            switch (topic) {
+              case "device/rfid/playback":
+                User.findById(device?.user._id)
+                  .populate("rfidChips", " -__v -user")
+                  .populate("devices")
+                  .exec(async (err: Error, user) => {
+                    if (err) {
+                      console.log("mqttHandler -> error finding user : ", device?.user._id);
+                    }
+                    if (!user) {
+                      console.log("mqttHandler -> couldn't find user with userId: ", device?.user._id);
+                      //TODO: Send mqtt response back to blink LEDS or something
+                    } else {
+
+                      if (command === "play" && user.rfidIsRegistering) {
+                        await createChip(user, rfid);
+                      } else {
+                        if (!device?.sonosGroupId) {
+                          console.log(`No sonos speaker assigned to device ${device?.deviceId}`);
+                        } else {
+                          handleSonosCommands(device, command,rfid,  user);
+                        }
+                      }
+                    }
+                  });
+                break;
+
+              case "device/setdevice":
+                handleSetDevice(device?.user._id, deviceId);
+                break;
+
+              case "device/pong":
+
+                //handleSaveDevicePong(message.toString())
+
+              default:
+                break;
             }
-            if (!user) {
-              console.log("couldn't find user with user secret: ", userSecret);
-              //TODO: Send mqtt response back to blink LEDS or something
-            } else {
-              /* If user user is not currently registering an RFID chip, he is loading a playlist */
-              if (!user.rfidIsRegistering) {
-                handleLoadPlaylist(message.toString(), user);
 
-                /* If user has initiated registering a RFID chip, we create a new RFID chip */
-              } else {
-                var newRFIDChip = new RfidChip({
-                  userSecret,
-                  user: user._id,
-                  id: rfid,
-                  sonosPlaylistId: ""
-                });
-                // save the user
-                newRFIDChip = await newRFIDChip.save();
-                user.rfidChips.push(newRFIDChip._id);
 
-                /* Send response with callback from api request */
-                globalRFIDRegister[user.userSecret](user);
-                globalRFIDRegister[user.userSecret] = null;
-              }
-            }
-          });
-        break;
+          }
+        })
 
-      case "device/rfid/playback":
-        handlePlayback(message.toString());
-        break;
-
-      case "device/setdevice":
-        handleSetDevice(message.toString());
-        break;
-
-      default:
-        break;
-    }
+        // message is Buffer
+      }
   });
+  return mqttClient
+}
+
+export function devicePing(deviceId: string): any {
+  console.log(`Sending ping to device: ${deviceId}`);
+  mqttClient.publish(`todevice/${deviceId}`, "ping")
 }

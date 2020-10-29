@@ -1,98 +1,80 @@
 import mongoose from "mongoose";
 import { Device } from "../models/Device";
-import { startPlayback, togglePlayPause } from "../api/sonos";
-import { IUser, IDevice } from "../models/models.interface";
+import { startPlayback, handlePlaybackCommand, handleVolumeChange } from "../api/sonos";
+import { IDevice, IUser } from "../models/models.interface";
+import { RfidChip } from "../models/RfidChip";
 
 const User = mongoose.model("User");
 
-export const globalRFIDRegister = { test: "hei" };
+export const globalRFIDRegister = {};
 
-type loadPlaylistMessage = {
-  room: string;
-  rfid: string;
-  userSecret: string;
-};
-export async function handleLoadPlaylist(message: string, user: IUser) {
-  const data: loadPlaylistMessage = JSON.parse(message);
-  const { room, rfid, userSecret } = data;
-  console.log(`Got a request with room: ${room} and rfid: ${rfid} and user secret: ${userSecret}`);
-  let chip = user.rfidChips.find(el => el.id === rfid);
-  let device = user.devices.find(el => el.deviceName === room);
+export async function handleLoadPlaylist(device: IDevice, rfid: string, user: IUser) {
+
+  console.log(
+    `handleLoadPlaylist -> Got a request for device: ${device.deviceId} and rfid: ${rfid} and user: ${user.username}`
+  );
+  let chip = user.rfidChips.find((el) => el.id === rfid);
+
   if (chip && device) {
-    const response: any = await startPlayback(device.sonosGroupId, chip.sonosPlaylistId, user);
-    console.log("startplayback response: ", !!response.ok);
+    await startPlayback(device, chip.sonosPlaylistId, user);
   } else if (!chip) {
     console.log("no chip found with id : ", rfid);
-  } else if (!device) {
-    console.log("no device found with name: ", room);
   }
 }
 
-type handlePlaybackMessage = {
-  room: string;
-  command: string;
-  userSecret: string;
-};
-export async function handlePlayback(message: string) {
-  const data: handlePlaybackMessage = JSON.parse(message);
-  const { room, command, userSecret }: handlePlaybackMessage = data;
-  console.log(`Got a request with room: ${room} and command: ${command} and user secret: ${userSecret}`);
-  User.findOne({ userSecret })
-    .populate("devices")
-    .exec(async (err, user: IUser) => {
-      if (err) {
-        console.log(err);
-      } else {
-        if (user) {
-          let device = user.devices.find(el => el.deviceName === room);
-          if (device) {
-            const response: any = await togglePlayPause(device.sonosGroupId, command, user._id);
-            console.log("response: ", response);
-            const data = await response.json();
-            console.log("result: ", data);
-          } else if (!device) {
-            console.log("no device found with name: ", room);
-          }
-        } else {
-          console.log("no user found with user secret: ", userSecret);
-        }
-      }
-    });
+
+export async function handleSonosCommands(device: IDevice, command: string, rfid: string, user: IUser) {
+  console.log(
+    `handlePlayback -> Got a request with device: ${device.deviceId} and command: ${command} and user: ${user.username}`
+  );
+
+  // Custom handling for "play" command.
+  if (command === "play") {
+    console.log(`chip id: ${rfid}`);
+    handleLoadPlaylist(device, rfid, user);
+  } else if (command.includes("volume")) {
+    await handleVolumeChange(device.sonosGroupId, command, user);
+  } else {
+    await handlePlaybackCommand(device.sonosGroupId, command, user);
+  }
+
 }
 
 /* Every time the Nodemcu restarts, it triggers this function. First time we store device to db,  */
-type setDeviceMessage = {
-  userSecret: string;
-  deviceName: string;
-};
-export async function handleSetDevice(message: string) {
-  const { userSecret, deviceName }: setDeviceMessage = JSON.parse(message);
-  User.findOne({ userSecret }, (err, user: IUser) => {
+
+export async function handleSetDevice(userId: string, deviceId: string) {
+  console.log("setting device...");
+
+  User.findById(userId, (err, user: IUser) => {
     if (err) {
       console.log("error finding user with user secret: ", err);
     }
     if (!user) {
-      console.log("couldn't find user with user secret: ", userSecret);
+      console.log("couldn't find user with userId: ", userId);
       //TODO: Send mqtt response back to blink LEDS or something
     } else {
+      console.log("setDevice -> found user: ", user._id);
+
       // save new device
-      Device.findOne({ userSecret, deviceName }, (err: Error, device: IDevice) => {
+      Device.findOne({ deviceId }, (err: Error, device: IDevice) => {
         if (err) {
           console.log("error finding device: ", err);
         } else {
           if (!device) {
+            console.log("handleSetDevice -> Brand new device! saving it.");
+
             device = new Device({
-              userSecret,
-              deviceName,
               user: user._id,
-              sonosGroupId: ""
+              deviceId
             });
 
-            device.save(err => {
+            device.save((err) => {
               if (err) {
                 console.log("couldn't save device", err);
               }
             });
+          } else {
+            console.log("handleSetDevice -> Not a new device.");
           }
 
           if (!user.devices.includes(device._id)) {
@@ -108,4 +90,61 @@ export async function handleSetDevice(message: string) {
       });
     }
   });
+}
+
+export async function handleSaveDevicePong(userId: string, deviceId: string) {
+
+
+  User.findOne({ userId }, (err, user: IUser) => {
+    if (err) {
+      console.log("error finding user with user secret: ", err);
+    }
+    if (!user) {
+      console.log(`couldn't find user with userId: ${userId}`);
+
+    } else {
+      console.log("handleDevicePong -> found user: ", user.username);
+
+      // Update device lastPong
+      Device.findOne({ deviceId, userId }, (err: Error, device: IDevice) => {
+        if (err) {
+          console.log("error finding device: ", err);
+        } else {
+          if (!device) {
+            console.log("handleDevicePong -> Found no device with deviceId: ", deviceId);
+
+
+          } else {
+            console.log("handleDevicePong -> Setting device lastPong on device: ", deviceId);
+
+            device.lastPong = new Date();
+
+            device.save((err) => {
+              if (err) {
+                console.log("couldn't save device", err);
+              } else {
+                console.log("device lastPong updated");
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+}
+
+export async function createChip(user: IUser, rfid) {
+  console.log(`creating new chip with id ${rfid}`);
+
+  let newRFIDChip = new RfidChip({
+    userId: user._id,
+    id: rfid
+  });
+  // save the user
+  newRFIDChip = await newRFIDChip.save();
+  user.rfidChips.push(newRFIDChip._id);
+
+  /* Send response with callback from api request */
+  globalRFIDRegister[user._id](user);
+  globalRFIDRegister[user._id] = null;
 }

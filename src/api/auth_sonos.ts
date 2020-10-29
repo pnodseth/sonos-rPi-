@@ -7,23 +7,7 @@ async function createAccessTokenFromAuthCodeGrant(code: string, redirectUri: str
   const postData = `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`;
   console.log("postdata: ", postData);
   try {
-    const response = await baseTokenRequest(postData);
-
-    if (response.ok) {
-      let data = await response.json();
-      user.accessToken = data.access_token;
-      user.refreshToken = data.refresh_token;
-      user.accessTokenExpirationTimestamp = new Date().getTime() + data.expires_in;
-
-      try {
-        await user.save();
-        return;
-      } catch (err) {
-        console.log("error saving user: ", err);
-      }
-    } else {
-      console.log("error : ", response);
-    }
+    return baseTokenRequest(postData);
   } catch (err) {
     console.log("error in createAccessTokenFromAuthCodeGrant: ", err);
   }
@@ -55,7 +39,7 @@ async function getAccessTokenFromDBorRefreshToken(user: IUser) {
             await user.save();
             return {
               accessToken: data.access_token,
-              refreshToken: data.refresh_token
+              refreshToken: data.refresh_token,
             };
           } catch (err) {
             console.log("error saving access token on user: ", err);
@@ -80,17 +64,50 @@ async function baseTokenRequest(postData: any) {
   const url = "https://api.sonos.com/login/v3/oauth/access";
   const headers = {
     "Content-type": "application/x-www-form-urlencoded",
-    Authorization: "Basic M2EwNmRhMjEtNjg5Zi00Mjg2LWFmOWItNTMwNDc0OTI2ZjI3OmIxZDc5ZGMyLTU5NTEtNDIyMy1hNzQ3LWNlNzdiMDE0ZTBmNQ=="
+    Authorization:
+      "Basic M2EwNmRhMjEtNjg5Zi00Mjg2LWFmOWItNTMwNDc0OTI2ZjI3OmIxZDc5ZGMyLTU5NTEtNDIyMy1hNzQ3LWNlNzdiMDE0ZTBmNQ==",
   };
   return fetch(url, {
     headers,
     method: "POST",
-    body: postData
+    body: postData,
   });
+}
+
+async function getNewAccessTokenFromRefreshToken(user: IUser) {
+  const postData: string = `grant_type=refresh_token&refresh_token=${user.refreshToken}`;
+
+  try {
+    const response = await baseTokenRequest(postData);
+    console.log("getNewAccessTokenFromRefreshToken -> response: ", response.status);
+    if (response.ok) {
+      let { access_token, refresh_token } = await response.json();
+      console.log("getNewAccessTokenFromRefreshToken -> access token: ", access_token);
+      user.accessToken = access_token;
+      user.refreshToken = refresh_token;
+
+      try {
+        console.log("getNewAccessTokenFromRefreshToken _> saving new token on user...");
+        await user.save();
+        console.log("getNewAccessTokenFromRefreshToken _> token saved on user");
+        return {
+          accessToken: access_token,
+          refreshToken: refresh_token,
+        };
+      } catch (err) {
+        console.log("error saving access token on user: ", err);
+      }
+    } else {
+      console.log("getNewAccessTokenFromRefreshToken -> response not ok: ", response.statusText);
+    }
+  } catch (err) {
+    console.log("Error getting ");
+  }
 }
 
 module.exports = {
   baseTokenRequest,
   createAccessTokenFromAuthCodeGrant,
-  getAccessTokenFromDBorRefreshToken
+  getAccessTokenFromDBorRefreshToken,
+  getNewAccessTokenFromRefreshToken,
 };
