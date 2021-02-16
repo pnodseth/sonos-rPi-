@@ -1,15 +1,16 @@
-import mongoose from "mongoose";
+import mongoose, { Model } from "mongoose";
 import passport from "passport";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { IUser, IRfidChip } from "../models/models.interface";
-import { globalRFIDRegister } from "../helpers";
+import { createChip, globalRFIDRegister, handleSetDevice, handleSonosCommands } from "../helpers";
+import { Device } from "../models/Device";
 const deviceRoutes = require("./deviceRoutes")
 const sonosRoutes = require("./sonosRoutes")
 require("../config/passport")(passport);
 const router = express.Router();
-const User = mongoose.model("User");
-const RfidChip = mongoose.model("RfidChip");
+const User: Model<IUser> = mongoose.model("User");
+const RfidChip: Model<IRfidChip> = mongoose.model("RfidChip");
 
 
 /* USER HANDLING */
@@ -17,6 +18,71 @@ const RfidChip = mongoose.model("RfidChip");
 
 router.use("/device", deviceRoutes);
 router.use("/sonos", sonosRoutes);
+
+
+router.post("/trigger", function(req,res) {
+  const { deviceId, rfid, isDev, command, topic } = req.body;
+  console.log("deviceid: ", deviceId);
+
+  // If we are in dev mode, we can add isDev to mqtt messages to prevent triggering production server
+  if (process.env.NODE_ENV === "PROD" && isDev) {
+    return;
+  } else {
+    Device.findOne({ deviceId }, (err, device) => {
+      if (err || !device) {
+        console.log(`mqttHandler -> ${topic} -> no device with deviceId ${deviceId} found`);
+      } else {
+        console.log(`device found for id ${deviceId}:`);
+
+        switch (topic) {
+          //
+          case "playback":
+            //
+            User.findById(device?.user._id)
+              .populate("rfidChips", " -__v -user")
+              .populate("devices")
+              .exec(async (err: Error, user) => {
+                //
+                if (err) {
+                  console.log("error finding user : ", device?.user._id);
+                  return;
+                }
+                //
+                if (!user) {
+                  console.log("couldn't find user with userId: ", device?.user._id);
+                  return;
+                  //TODO: Send mqtt response back to blink LEDS or something
+                }
+                //
+                if (command === "play" && user.rfidIsRegistering) {
+                  await createChip(user, rfid);
+                  //
+                  // start playing
+                } else {
+                  if (!device?.sonosGroupId) {
+                    console.log(`No sonos speaker assigned to device ${device?.deviceId}`);
+                  } else {
+                    await handleSonosCommands(device, command, rfid, user);
+                  }
+                }
+              });
+            break;
+
+          case "setdevice":
+            handleSetDevice(device?.user._id, deviceId);
+            break;
+
+
+          default:
+            break;
+        }
+      }
+    });
+
+    // message is Buffer
+  }
+});
+
 
 
 
@@ -108,7 +174,7 @@ router.get("/profile", passport.authenticate("jwt", { session: false }), functio
       .select("-password -accessToken  -__v -refreshToken")
       .populate("devices", " -__v  -user")
       .populate("rfidChips", " -__v  -user")
-      .exec((err: Error, user: IUser) => {
+      .exec((err, user) => {
         res.json({ user });
       });
   } else {
@@ -125,11 +191,11 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId/:sonosHouseholdId", passpor
   var token: string = getToken(req.headers);
   console.log("rfid: ", req.params.rfidId);
   if (token) {
-    RfidChip.findById(req.params.rfidId).exec(async (err: Error, chip: IRfidChip) => {
+    RfidChip.findById(req.params.rfidId).exec(async (err, chip) => {
       if (err) {
         console.error(err);
         res.status(404).send(err);
-      } else {
+      } else if (chip) {
         console.log("found rfid! ", chip);
         chip.sonosPlaylistId = req.params.sonosPlaylistId;
         chip.sonosHouseholdId = req.params.sonosHouseholdId;
@@ -146,7 +212,7 @@ router.get("/rfid/associate/:rfidId/:sonosPlaylistId/:sonosHouseholdId", passpor
 /* User initiates RFID Chip registration. This endpoint is called, which updates user property rfidIsregistering = true. Sets a timeout
 where it reverts back to false after 30 sec in case no further action is performed from user. */
 router.get("/rfid/associate/start", passport.authenticate("jwt", { session: false }), async function(req, res) {
-  var token: string = getToken(req.headers);
+  const token: string = getToken(req.headers);
   if (token) {
     //todo: Move user.rfidIsRegistering to redis
     req.user.rfidIsRegistering = true;

@@ -31,7 +31,7 @@ router.get("/", passport.authenticate("jwt", { session: false }), function (req,
 router.get("/:deviceId", passport.authenticate("jwt", { session: false }), function (req, res) {
   const token: string = getToken(req.headers);
   if (token) {
-    Device.findOne({ user: req.user._id, deviceId: req.params.deviceId }).exec((err: Error, device: IDevice) => {
+    Device.findOne({ user: req.user._id, deviceId: req.params.deviceId }).exec((err, device: IDevice | null) => {
       if (err) {
         console.log("error finding device: ", err);
         res.status(404).send(err);
@@ -51,7 +51,7 @@ router.post("/", passport.authenticate("jwt", { session: false }), (req, res) =>
   if (token) {
     const { deviceId } = req.body;
 
-    Device.findOne({ deviceId }).exec(async (err: Error, device: IDevice) => {
+    Device.findOne({ deviceId }).exec(async (err, device) => {
       if (err) {
         res.status(500).send();
       } else {
@@ -84,6 +84,7 @@ router.put("/:deviceId", passport.authenticate("jwt", { session: false }), funct
     const updatedDevice = req.body;
     console.log(typeof updatedDevice);
 
+    // @ts-ignore
     Device.replaceOne({ user: req.user._id, deviceId: req.params.deviceId }, updatedDevice, (err) => {
       if (err) {
         console.log("error finding device: ", err);
@@ -150,15 +151,15 @@ router.post("/:id/assign", passport.authenticate("jwt", { session: false }), fun
       sonosHouseholdId,
     }: { sonosGroupId: string; sonosHouseholdId: string; sonosGroupIdParsed: string } = req.body;
 
-    Device.findById(req.params.id).exec(async (err: Error, device: IDevice) => {
+    Device.findById(req.params.id).exec(async (err, device) => {
       if (err) {
         console.log("error finding device: ", err);
         res.send(err);
-      } else {
+      } else if (device) {
         device.sonosGroupId = sonosGroupId;
         device.sonosHouseholdId = sonosHouseholdId;
         device.sonosGroupIdParsed = sonosGroupIdParsed;
-        await device.save(function (err: Error) {
+        await device.save(function (err) {
           if (err) {
             console.log("TCL: err", err);
             res.status(500).send();

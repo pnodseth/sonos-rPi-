@@ -1,7 +1,7 @@
 import {  Schema, Model, model } from "mongoose";
 import { IRfidChip } from "./models.interface";
 
-const RfidChipSchema: Schema = new Schema({
+const RfidChipSchema: Schema<IRfidChip> = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",

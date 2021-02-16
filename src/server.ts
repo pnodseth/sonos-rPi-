@@ -17,13 +17,15 @@ const PORT = process.env.PORT || 3003;
 mongoose.set("useNewUrlParser", true);
 mongoose.set("useFindAndModify", false);
 mongoose.set("useCreateIndex", true);
+
+console.log("connecting to db...");
 mongoose
   .connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
-  .then(() => console.log("mongoose connection succesful"))
-  .catch(err => console.error(err));
+  .then(() => console.log("db connection succesful"))
+  .catch(err => console.error("couldnt connect to db", err));
 
 app.use(
   cors({

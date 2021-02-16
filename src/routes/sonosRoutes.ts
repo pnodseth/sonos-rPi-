@@ -26,15 +26,18 @@ router.get("/households", passport.authenticate("jwt", { session: false }), asyn
   if (token) {
     const endpoint = "households";
     try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: any = await sonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
+      User.findById(req.user._id).exec(async (err, user) => {
+        if (user) {
+          const response: any = await sonosApiRequest({
+            endpoint,
+            method: "get",
+            user
+          });
+          const data = await response.json();
 
-        res.json(data);
+          res.json(data);
+        }
+
       });
     } catch (err) {
       console.log(err);
@@ -51,15 +54,20 @@ router.get("/households/:householdId/groups", passport.authenticate("jwt", { ses
   if (token) {
     const endpoint: string = `households/${req.params.householdId}/groups`;
     try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await sonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
+      User.findById(req.user._id).exec(async (err, user) => {
+        if (user) {
+          const response: Response = await sonosApiRequest({
+            endpoint,
+            method: "get",
+            user
+          });
+          const data = await response.json();
 
-        res.json(data);
+          res.json(data);
+        } else {
+          res.status(400).send()
+        }
+
       });
     } catch (err) {
       console.log(err);
@@ -75,15 +83,20 @@ router.get("/households/:householdId/playlists", passport.authenticate("jwt", { 
   if (token) {
     const endpoint: string = `households/${req.params.householdId}/playlists`;
     try {
-      User.findById(req.user._id).exec(async (err: Error, user: IUser) => {
-        const response: Response = await sonosApiRequest({
-          endpoint,
-          method: "get",
-          user
-        });
-        const data = await response.json();
+      User.findById(req.user._id).exec(async (err, user) => {
+        if (user) {
+          const response: Response = await sonosApiRequest({
+            endpoint,
+            method: "get",
+            user
+          });
+          const data = await response.json();
 
-        res.json(data);
+          res.json(data);
+        } else {
+          res.status(400).send();
+        }
+
       });
     } catch (err) {
       console.log(err);
@@ -102,8 +115,8 @@ router.post("/storeinitialtoken", passport.authenticate("jwt", { session: false 
   if (token) {
     const { code, redirectUri }: { code: string; redirectUri: string } = req.body;
 
-    User.findById(req.user._id).exec(async (err, user: IUser) => {
-      if (!err) {
+    User.findById(req.user._id).exec(async (err, user) => {
+      if (!err && user) {
         try {
           let response = await createAccessTokenFromAuthCodeGrant(code, redirectUri, user);
 

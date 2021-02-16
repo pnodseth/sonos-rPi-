@@ -1,14 +1,14 @@
 import { IDevice } from "./models.interface";
 import {  Schema, Model, model } from "mongoose";
 
-var DeviceSchema: Schema = new Schema({
+const DeviceSchema: Schema<IDevice> = new Schema({
   deviceId: {
     type: String,
-    required: true,
+    required: true
   },
   user: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: "User"
   },
   deviceName: {
     type: String,

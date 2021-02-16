@@ -3,7 +3,7 @@ var bcrypt = require("bcrypt-nodejs");
 import { Schema, Model, model, HookNextFunction } from "mongoose";
 import { IUser } from "./models.interface";
 
-var UserSchema: Schema = new Schema({
+var UserSchema: Schema<IUser> = new Schema({
   username: {
     type: String,
     unique: true,
